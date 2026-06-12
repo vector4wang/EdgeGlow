@@ -1,0 +1,19 @@
+# Build artifacts
+Build/
+Release/
+EdgeGlow
+*.dSYM/
+
+# Xcode
+*.xcodeproj/
+xcuserdata/
+DerivedData/
+
+# macOS
+.DS_Store
+*.swp
+*~
+
+# IDE
+.idea/
+.vscode/
