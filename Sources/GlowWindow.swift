@@ -246,19 +246,9 @@ class GlowWindow {
         FileHandle.standardError.write(Data("[edge-glow] ✨ 流光开启\n".utf8))
     }
 
-    /// 等待用户输入 — 停止旋转，静态显示
+    /// 等待用户输入 — 直接淡出消失
     func pulse() {
-        guard settings.enabled else { return }
-        isVisible = true
-        window.orderFrontRegardless()
-
-        ringLayer.removeAnimation(forKey: "fadeIn")
-        ringLayer.removeAnimation(forKey: "fadeOut")
-
-        stopFlow()
-        ringLayer.opacity = 1.0
-
-        FileHandle.standardError.write(Data("[edge-glow] ⏸ 等待用户输入 (静止)\n".utf8))
+        hide()
     }
 
     func hide() {

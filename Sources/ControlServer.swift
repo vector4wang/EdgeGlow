@@ -11,6 +11,14 @@ class ControlServer {
     var onPulse: (() -> Void)?
     private let port: UInt16
     private var pulseTimer: DispatchWorkItem?
+    private var safetyTimer: DispatchWorkItem?
+
+    /// 引用计数：多个 Agent 窗口同时工作时，流光不会误灭
+    private var activeCount = 0 {
+        didSet {
+            FileHandle.standardError.write(Data("[edge-glow] 🔢 activeCount = \(activeCount)\n".utf8))
+        }
+    }
 
     init(port: UInt16 = 9876) {
         self.port = port
@@ -43,6 +51,8 @@ class ControlServer {
     func stop() {
         pulseTimer?.cancel()
         pulseTimer = nil
+        safetyTimer?.cancel()
+        safetyTimer = nil
         listener?.cancel()
         listener = nil
     }
@@ -100,31 +110,49 @@ class ControlServer {
 
         // 先执行 action，再返回响应
         DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             switch path {
             case "/start":
-                self?.pulseTimer?.cancel()
-                self?.pulseTimer = nil
-                self?.onStart?()
-                self?.sendResponse(200, "ok", conn: conn)
+                self.pulseTimer?.cancel()
+                self.pulseTimer = nil
+                self.activeCount += 1
+                self.onStart?()
+                self.resetSafetyTimer()
+                self.sendResponse(200, "ok", conn: conn)
 
             case "/stop":
-                self?.pulseTimer?.cancel()
-                self?.pulseTimer = nil
-                self?.onStop?()
-                self?.sendResponse(200, "ok", conn: conn)
+                self.pulseTimer?.cancel()
+                self.pulseTimer = nil
+                self.activeCount = max(0, self.activeCount - 1)
+                if self.activeCount == 0 { self.onStop?() }
+                self.sendResponse(200, "ok", conn: conn)
 
             case "/pulse":
-                self?.pulseTimer?.cancel()
-                let work = DispatchWorkItem { [weak self] in
-                    self?.onPulse?()
+                self.pulseTimer?.cancel()
+                self.activeCount = max(0, self.activeCount - 1)
+                if self.activeCount == 0 {
+                    self.onPulse?()
                 }
-                self?.pulseTimer = work
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: work)
-                self?.sendResponse(200, "ok", conn: conn)
+                self.sendResponse(200, "ok", conn: conn)
 
             default:
-                self?.sendResponse(404, "Not Found", conn: conn)
+                self.sendResponse(404, "Not Found", conn: conn)
             }
         }
+    }
+
+    /// 安全兜底：60s 无新 /start 自动归零（防止 Agent 崩溃导致计数卡住）
+    private func resetSafetyTimer() {
+        safetyTimer?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            guard let self = self else { return }
+            if self.activeCount > 0 {
+                FileHandle.standardError.write(Data("[edge-glow] ⏰ 60s 无活动，自动归零\n".utf8))
+                self.activeCount = 0
+                self.onStop?()
+            }
+        }
+        safetyTimer = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 60.0, execute: work)
     }
 }
