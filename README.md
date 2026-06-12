@@ -33,8 +33,7 @@ EdgeGlow 让你的屏幕边缘亮起流光：
 ```
 ┌─────────────────────────────────────────┐
 │  🔴 AI 正在思考    →  流光旋转流动      │
-│  🟡 等待你的输入    →  流光静止待命      │
-│  ⚫ 任务完成        →  流光淡出消失      │
+│  ⚫ 完成/等待输入   →  流光淡出消失      │
 └─────────────────────────────────────────┘
 ```
 
@@ -44,11 +43,14 @@ EdgeGlow 让你的屏幕边缘亮起流光：
 
 ### 🎬 效果预览
 
+<p align="center">
+  <img src="Resources/demo.gif" width="100%" alt="EdgeGlow Demo">
+</p>
+
 | 状态 | 视觉效果 | 触发方式 |
 |:----:|:--------:|:--------:|
 | 🟢 **思考中** | 流光沿屏幕边缘旋转流动 | `UserPromptSubmit` / `PreToolUse` |
-| 🟡 **等待输入** | 流光静止，保持亮起 | `PostToolUse` / `PermissionRequest` |
-| 🔴 **已完成** | 流光 1.5s 淡出消失 | `Stop` |
+| 🔴 **完成/等待** | 流光 1.5s 淡出消失 | `PostToolUse` / `Stop` |
 
 ---
 
@@ -362,10 +364,13 @@ When using Claude Code or Hermes Agent, the AI works behind the scenes — **you
 EdgeGlow puts a glowing marquee around your screen edges:
 
 - 🟢 **AI Thinking** → Marquee flows around the screen
-- 🟡 **Waiting for Input** → Marquee freezes, stays lit
-- 🔴 **Done** → Marquee fades out
+- 🔴 **Done / Waiting** → Marquee fades out and disappears
 
 > **One glance at your screen edge tells you everything.**
+
+<p align="center">
+  <img src="Resources/demo.gif" width="100%" alt="EdgeGlow Demo">
+</p>
 
 ### 🚀 Install
 
