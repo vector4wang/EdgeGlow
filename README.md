@@ -156,9 +156,11 @@ AI Agent 执行操作
 
 ### 🚀 安装
 
-#### 方式一：下载 DMG（推荐）
+> **系统要求：macOS 13.0 (Ventura) 及以上** · 支持 Intel & Apple Silicon
 
-前往 [Releases](../../releases) 下载最新版本。
+#### 方式一：下载 Release（推荐）
+
+前往 [Releases](../../releases) 下载最新 `EdgeGlow-v1.0.0.zip`，解压后打开。
 
 > ⚠️ 首次打开如遇「无法验证开发者」提示，请 **右键 → 打开** 即可。
 
@@ -348,7 +350,7 @@ build.sh                    # 构建脚本（Universal Binary + .app 打包）
 
 ### 📦 系统要求
 
-- macOS 13.0+ (Ventura)
+- **macOS 13.0+ (Ventura)**
 - 支持 Intel (x86_64) 和 Apple Silicon (arm64)
 - Universal Binary，一个包通吃所有 Mac
 
@@ -374,7 +376,9 @@ EdgeGlow puts a glowing marquee around your screen edges:
 
 ### 🚀 Install
 
-Download DMG from [Releases](../../releases), or build from source:
+> **Requires macOS 13.0 (Ventura) or later** · Intel & Apple Silicon
+
+Download `EdgeGlow-v1.0.0.zip` from [Releases](../../releases), unzip and open.
 
 ```bash
 git clone https://github.com/vector4wang/EdgeGlow.git && cd EdgeGlow
@@ -399,8 +403,9 @@ Menu bar ✦ → Settings: color theme (4 presets), speed, width, brightness, di
 
 ### 📦 Requirements
 
-- macOS 13.0+ (Ventura)
-- Universal Binary (Intel + Apple Silicon)
+- **macOS 13.0+ (Ventura)**
+- Intel (x86_64) and Apple Silicon (arm64)
+- Universal Binary
 
 ---
 
