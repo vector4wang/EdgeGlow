@@ -146,8 +146,7 @@ If EdgeGlow is useful to you, feel free to buy me a coffee ☕
 
 | 支付宝 / Alipay | 微信支付 / WeChat Pay |
 |:---:|:---:|
-| <!-- TODO: 替换为你的支付宝收款码图片 --> | <!-- TODO: 替换为你的微信收款码图片 --> |
-| `alipay_qr.png` | `wechat_qr.png` |
+| <img src="Resources/zfb.png" width="200"> | <img src="Resources/wx.png" width="200"> |
 
 ---
 
