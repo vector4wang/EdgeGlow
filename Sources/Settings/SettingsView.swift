@@ -39,7 +39,7 @@ struct SettingsView: View {
                         Text(L("settings.theme"))
                             .font(.subheadline)
                             .foregroundColor(.secondary)
-                        Picker("Theme", selection: $settings.themeName) {
+                        Picker(L("settings.theme"), selection: $settings.themeName) {
                             Text(L("theme.rainbow")).tag(ThemeName.rainbow)
                             Text(L("theme.pastel")).tag(ThemeName.pastel)
                             Text(L("theme.fire")).tag(ThemeName.fire)

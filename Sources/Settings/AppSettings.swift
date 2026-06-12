@@ -9,6 +9,7 @@ class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
     private let defaults = UserDefaults.standard
+    var onPortChanged: ((Int) -> Void)?
 
     // MARK: - Keys
     private enum Key: String {
@@ -50,6 +51,7 @@ class AppSettings: ObservableObject {
             let clamped = min(max(httpPort, 1024), 65535)
             if clamped != httpPort { httpPort = clamped; return }
             defaults.set(httpPort, forKey: Key.httpPort.rawValue)
+            if httpPort != oldValue { onPortChanged?(httpPort) }
         }
     }
     @Published var clockwise: Bool {
@@ -82,7 +84,10 @@ class AppSettings: ObservableObject {
         self.enabled = UserDefaults.standard.object(forKey: Key.enabled.rawValue) as? Bool ?? true
         self.autoStart = UserDefaults.standard.bool(forKey: Key.autoStart.rawValue)
         let savedTheme = UserDefaults.standard.string(forKey: Key.themeName.rawValue) ?? ThemeName.rainbow.rawValue
-        self.themeName = ThemeName(rawValue: savedTheme) ?? .rainbow
+        // 迁移：旧版中文 raw value → 英文
+        let migrated: [String: String] = ["炫酷": "rainbow", "柔和": "pastel", "烈焰": "fire", "冰雪": "ice", "自定义": "custom"]
+        let normalized = migrated[savedTheme] ?? savedTheme
+        self.themeName = ThemeName(rawValue: normalized) ?? .rainbow
         self.speed = UserDefaults.standard.object(forKey: Key.speed.rawValue) as? Double ?? 5
         self.width = UserDefaults.standard.object(forKey: Key.width.rawValue) as? Double ?? 5
         self.brightness = UserDefaults.standard.object(forKey: Key.brightness.rawValue) as? Double ?? 0.85
@@ -92,7 +97,10 @@ class AppSettings: ObservableObject {
     }
 
     // MARK: - Auto Start
+    private var isApplyingAutoStart = false
+
     private func applyAutoStart() {
+        guard !isApplyingAutoStart else { return }
         if #available(macOS 13.0, *) {
             do {
                 if autoStart {
@@ -101,9 +109,10 @@ class AppSettings: ObservableObject {
                     try SMAppService.mainApp.unregister()
                 }
             } catch {
-                // 注册失败，回滚 UI 状态（直接写 UserDefaults，避免触发 didSet 递归）
-                defaults.set(!autoStart, forKey: Key.autoStart.rawValue)
-                objectWillChange.send()
+                // 回滚属性和 UserDefaults
+                isApplyingAutoStart = true
+                autoStart = !autoStart
+                isApplyingAutoStart = false
                 FileHandle.standardError.write(Data("[edge-glow] 自启动设置失败: \(error)\n".utf8))
             }
         }

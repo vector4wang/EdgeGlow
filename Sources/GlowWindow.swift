@@ -2,6 +2,17 @@ import Cocoa
 import Combine
 
 // ============================================================
+// MARK: - 工具函数
+// ============================================================
+private func totalScreenFrame() -> NSRect {
+    var frame = NSRect.zero
+    for screen in NSScreen.screens {
+        frame = NSUnionRect(frame, screen.frame)
+    }
+    return frame
+}
+
+// ============================================================
 // MARK: - 流光窗口
 // ============================================================
 class GlowWindow {
@@ -9,17 +20,20 @@ class GlowWindow {
     let ringLayer = CALayer()
     let settings: AppSettings
     var cancellables = Set<AnyCancellable>()
-    private var rebuildWorkItem: DispatchWorkItem?  // 用于 debounce
-    private var screenChangeWorkItem: DispatchWorkItem?  // 用于 screen change 限流
+    private var rebuildWorkItem: DispatchWorkItem?
+    private var screenChangeWorkItem: DispatchWorkItem?
+    private var isVisible = false
+    private var cachedPerimeter: CGFloat = 0
+
+    // Timer 驱动流动动画（不依赖 Core Animation）
+    private var flowTimer: Timer?
+    private var dashPhase: CGFloat = 0
+    private var lastTickTime: CFTimeInterval = 0
 
     init(settings: AppSettings = .shared) {
         self.settings = settings
 
-        // 使用所有屏幕的最大包围区域，支持多显示器
-        var totalFrame = NSRect.zero
-        for screen in NSScreen.screens {
-            totalFrame = NSUnionRect(totalFrame, screen.frame)
-        }
+        let totalFrame = totalScreenFrame()
         guard totalFrame.width > 0 else { fatalError("No screen") }
 
         window = NSWindow(
@@ -51,7 +65,16 @@ class GlowWindow {
         FileHandle.standardError.write(Data("[edge-glow] ✨ 就绪\n".utf8))
     }
 
-    // MARK: - 监听屏幕变化 (500ms 限流)
+    // MARK: - 当前周长（带缓存）
+    private func currentPerimeter() -> CGFloat {
+        if cachedPerimeter > 0 { return cachedPerimeter }
+        let frame = totalScreenFrame()
+        let inset: CGFloat = 2
+        cachedPerimeter = 2 * (frame.size.width - inset * 2 + frame.size.height - inset * 2)
+        return cachedPerimeter
+    }
+
+    // MARK: - 监听屏幕变化
     private func observeScreenChanges() {
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
@@ -68,29 +91,20 @@ class GlowWindow {
     }
 
     private func handleScreenChange() {
-        // 获取所有屏幕的最大包围区域
-        var totalFrame = NSRect.zero
-        for screen in NSScreen.screens {
-            totalFrame = NSUnionRect(totalFrame, screen.frame)
-        }
-
+        let totalFrame = totalScreenFrame()
         FileHandle.standardError.write(Data("[edge-glow] 屏幕变化 → \(totalFrame.size.width)x\(totalFrame.size.height)\n".utf8))
 
-        // 调整窗口大小
+        cachedPerimeter = 0  // 清除缓存
         window.setFrame(totalFrame, display: true)
-
-        // 重建图层
         ringLayer.frame = CGRect(origin: .zero, size: totalFrame.size)
-        ringLayer.sublayers?.forEach { $0.removeFromSuperlayer() }
-        buildLayers(size: totalFrame.size)
+        rebuildSublayers()
 
-        // 如果正在显示，重新应用
-        if ringLayer.presentation()?.opacity ?? 0 > 0 {
+        if isVisible {
             ringLayer.opacity = 1.0
         }
     }
 
-    // MARK: - 监听设置变化 (100ms debounce)
+    // MARK: - 监听设置变化
     private func observeSettings() {
         let scheduleRebuild = { [weak self] in
             self?.rebuildWorkItem?.cancel()
@@ -110,18 +124,10 @@ class GlowWindow {
     }
 
     private func rebuildLayers() {
-        FileHandle.standardError.write(Data("[edge-glow] rebuildLayers called\n".utf8))
-
-        // 使用所有屏幕的 union 尺寸，与 init 一致
-        var totalFrame = NSRect.zero
-        for screen in NSScreen.screens {
-            totalFrame = NSUnionRect(totalFrame, screen.frame)
+        rebuildSublayers()
+        if isVisible {
+            ringLayer.opacity = 1.0
         }
-        guard totalFrame.width > 0 else { return }
-
-        // 清除旧的子图层
-        ringLayer.sublayers?.forEach { $0.removeFromSuperlayer() }
-        buildLayers(size: totalFrame.size)
     }
 
     // MARK: - 构建图层
@@ -138,12 +144,11 @@ class GlowWindow {
         let theme = settings.currentTheme
         let colors = theme.cgColors(alpha: brightness)
 
-        // 多层: (线宽倍率, 透明度倍率, 模糊, 单元比例, 段占比)
         let configs: [(widthMul: CGFloat, alphaMul: CGFloat, blur: Double, unitRatio: CGFloat, dashFrac: CGFloat)] = [
-            (baseWidth * 1.5 / 2, 0.15 * brightness, 12.0, 0.20, 0.45),   // 大光晕
-            (baseWidth * 0.8 / 2,  0.30 * brightness, 8.0,  0.20, 0.40),   // 中光晕
-            (baseWidth * 0.3 / 2,  0.70 * brightness, 2.0,  0.20, 0.35),   // 主色线
-            (baseWidth * 0.1 / 2,  0.95 * brightness, 0.0,  0.20, 0.30),   // 亮芯
+            (baseWidth * 1.5 / 2, 0.15 * brightness, 12.0, 0.20, 0.45),
+            (baseWidth * 0.8 / 2,  0.30 * brightness, 8.0,  0.20, 0.40),
+            (baseWidth * 0.3 / 2,  0.70 * brightness, 2.0,  0.20, 0.35),
+            (baseWidth * 0.1 / 2,  0.95 * brightness, 0.0,  0.20, 0.30),
         ]
 
         for (lineWidth, alpha, blur, unitRatio, dashFrac) in configs {
@@ -169,16 +174,7 @@ class GlowWindow {
 
             ringLayer.addSublayer(shape)
 
-            // 流光动画
-            let dashAnim = CABasicAnimation(keyPath: "lineDashPhase")
-            dashAnim.fromValue = 0
-            dashAnim.toValue = settings.clockwise ? perimeter : -perimeter
-            dashAnim.duration = settings.animationDuration
-            dashAnim.repeatCount = .infinity
-            dashAnim.timingFunction = CAMediaTimingFunction(name: .linear)
-            shape.add(dashAnim, forKey: "flow")
-
-            // 颜色循环
+            // 只用 CA 做颜色循环（稳定可靠）
             let colorAnim = CAKeyframeAnimation(keyPath: "strokeColor")
             colorAnim.values = colors.map { $0 as Any }
             colorAnim.keyTimes = (0..<colors.count).map {
@@ -191,19 +187,52 @@ class GlowWindow {
         }
     }
 
+    // MARK: - Timer 驱动流动（不依赖 Core Animation 动画系统）
+    private func startFlow() {
+        stopFlow()
+        lastTickTime = CACurrentMediaTime()
+        // 不重置 dashPhase，保持当前位置
+        flowTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in
+            self?.tickFlow()
+        }
+        RunLoop.main.add(flowTimer!, forMode: .common)
+    }
+
+    private func stopFlow() {
+        flowTimer?.invalidate()
+        flowTimer = nil
+    }
+
+    private func tickFlow() {
+        let now = CACurrentMediaTime()
+        let dt = CGFloat(now - lastTickTime)
+        lastTickTime = now
+
+        // 防止 dt 过大（如从后台回来），限制最大 0.1s
+        let clampedDt = min(dt, 0.1)
+
+        let perimeter = currentPerimeter()
+        guard perimeter > 0, settings.animationDuration > 0 else { return }
+
+        let speed = perimeter / CGFloat(settings.animationDuration)
+        dashPhase += speed * clampedDt * (settings.clockwise ? 1 : -1)
+
+        ringLayer.sublayers?.forEach { layer in
+            (layer as? CAShapeLayer)?.lineDashPhase = dashPhase
+        }
+    }
+
     // MARK: - 显示/隐藏/脉冲
-    func show(mode: String = "thinking") {
+    func show() {
         guard settings.enabled else { return }
+        isVisible = true
         window.orderFrontRegardless()
 
-        // 取消正在进行的淡出，防止回调把窗口关掉
         ringLayer.removeAnimation(forKey: "fadeOut")
-        ringLayer.removeAnimation(forKey: "pulse")
+        ringLayer.removeAnimation(forKey: "fadeIn")
 
-        // 恢复所有子图层的流动动画
-        ringLayer.sublayers?.forEach { layer in
-            layer.speed = 1.0
-        }
+        rebuildSublayers()
+        startFlow()
 
         ringLayer.opacity = 1.0
         let fade = CABasicAnimation(keyPath: "opacity")
@@ -214,46 +243,46 @@ class GlowWindow {
         fade.isRemovedOnCompletion = false
         ringLayer.add(fade, forKey: "fadeIn")
 
-        FileHandle.standardError.write(Data("[edge-glow] ✨ 流光开启 (思考模式)\n".utf8))
+        FileHandle.standardError.write(Data("[edge-glow] ✨ 流光开启\n".utf8))
     }
 
     /// 等待用户输入 — 停止旋转，静态显示
     func pulse() {
         guard settings.enabled else { return }
+        isVisible = true
         window.orderFrontRegardless()
 
-        // 停止淡入动画
         ringLayer.removeAnimation(forKey: "fadeIn")
+        ringLayer.removeAnimation(forKey: "fadeOut")
 
-        // 停止所有子图层的流动动画（跑马灯静止）
-        ringLayer.sublayers?.forEach { layer in
-            layer.speed = 0.0
-        }
-
-        // 保持全亮，不闪烁
+        stopFlow()
         ringLayer.opacity = 1.0
 
         FileHandle.standardError.write(Data("[edge-glow] ⏸ 等待用户输入 (静止)\n".utf8))
     }
 
     func hide() {
+        isVisible = false
+        stopFlow()
+
         let fade = CABasicAnimation(keyPath: "opacity")
         fade.fromValue = ringLayer.presentation()?.opacity ?? 1.0
         fade.toValue = 0
         fade.duration = 1.5
         fade.fillMode = .forwards
         fade.isRemovedOnCompletion = false
-        fade.delegate = FadeCB { [weak self] in
-            self?.window.orderOut(nil)
-        }
         ringLayer.add(fade, forKey: "fadeOut")
         ringLayer.opacity = 0
     }
 
-}
-
-class FadeCB: NSObject, CAAnimationDelegate {
-    let cb: () -> Void
-    init(_ cb: @escaping () -> Void) { self.cb = cb }
-    func animationDidStop(_ anim: CAAnimation, finished flag: Bool) { cb() }
+    // MARK: - 重建子图层
+    private func rebuildSublayers() {
+        ringLayer.sublayers?.forEach { $0.removeFromSuperlayer() }
+        let frame = totalScreenFrame()
+        buildLayers(size: frame.size)
+        // 把当前相位应用到新图层，避免视觉跳变
+        ringLayer.sublayers?.forEach { layer in
+            (layer as? CAShapeLayer)?.lineDashPhase = dashPhase
+        }
+    }
 }

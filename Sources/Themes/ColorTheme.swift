@@ -4,11 +4,11 @@ import Cocoa
 // MARK: - 颜色主题
 // ============================================================
 enum ThemeName: String, CaseIterable, Codable {
-    case rainbow = "炫酷"
-    case pastel  = "柔和"
-    case fire    = "烈焰"
-    case ice     = "冰雪"
-    case custom  = "自定义"
+    case rainbow = "rainbow"
+    case pastel  = "pastel"
+    case fire    = "fire"
+    case ice     = "ice"
+    case custom  = "custom"
 }
 
 struct ColorTheme {

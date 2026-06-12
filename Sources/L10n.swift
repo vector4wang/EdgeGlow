@@ -61,23 +61,22 @@ class L10n {
         "menu.feedback":           ("反馈问题", "Feedback"),
         "menu.quit":               ("退出 EdgeGlow", "Quit EdgeGlow"),
 
-        // MARK: - Hooks 安装
+        // MARK: - Hooks 引导
         "hooks.dialog.title":      ("配置 Agent 联动", "Configure Agent Integration"),
-        "hooks.dialog.subtitle":   ("选择要配置的 AI 编程助手：", "Select an AI coding assistant to configure:"),
-        "hooks.configured":        ("✓ 已配置", "✓ Configured"),
-        "hooks.notConfigured":     ("未配置", "Not Configured"),
+        "hooks.viewConfig":        ("查看配置", "View Config"),
         "hooks.cancel":            ("取消", "Cancel"),
-        "hooks.reconfigure.title": ("%@ 已配置", "%@ Already Configured"),
-        "hooks.reconfigure.msg":   ("是否重新配置？", "Reconfigure?"),
-        "hooks.reconfigure.btn":   ("重新配置", "Reconfigure"),
-        "hooks.success.title":     ("配置完成", "Configuration Complete"),
-        "hooks.success.msg":       ("%@ hooks 已成功写入。\n重启 %@ 后即可生效。",
-                                    "%@ hooks installed.\nRestart %@ to take effect."),
-        "hooks.success.ok":        ("好的", "OK"),
-        "hooks.error.title":       ("写入失败", "Write Failed"),
-        "hooks.error.msg":         ("无法为 %@ 写入 hooks：\n%@",
-                                    "Failed to write hooks for %@:\n%@"),
-        "hooks.error.ok":          ("确定", "OK"),
+
+        "hooks.cc.title":          ("Claude Code 配置引导", "Claude Code Setup Guide"),
+        "hooks.cc.msg":            ("复制下方提示词，粘贴到 Claude Code 对话框中发送，Agent 会自动帮你完成配置：\n\n%@",
+                                    "Copy the prompt below and paste it into Claude Code. The agent will configure hooks for you:\n\n%@"),
+        "hooks.cc.copy":           ("复制提示词", "Copy Prompt"),
+        "hooks.cc.close":          ("关闭", "Close"),
+
+        "hooks.hermes.title":      ("Hermes Agent 配置引导", "Hermes Agent Setup Guide"),
+        "hooks.hermes.msg":        ("复制下方提示词，粘贴到 Hermes Agent 对话框中发送，Agent 会自动帮你完成配置：\n\n%@",
+                                    "Copy the prompt below and paste it into Hermes Agent. The agent will configure hooks for you:\n\n%@"),
+        "hooks.hermes.copy":       ("复制提示词", "Copy Prompt"),
+        "hooks.hermes.close":      ("关闭", "Close"),
     ]
 
     func translate(_ key: String) -> String {

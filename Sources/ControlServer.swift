@@ -72,21 +72,46 @@ class ControlServer {
         readMore()
     }
 
-    private func processRequest(_ raw: String, conn: NWConnection) {
-        let path = raw.components(separatedBy: "\r\n").first?
-            .split(separator: " ").dropFirst().first.map(String.init) ?? ""
+    private func sendResponse(_ code: Int, _ body: String, conn: NWConnection) {
+        let resp = "HTTP/1.1 \(code) OK\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)"
+        conn.send(content: Data(resp.utf8), completion: .idempotent)
+        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { conn.cancel() }
+    }
 
+    private func processRequest(_ raw: String, conn: NWConnection) {
+        let firstLine = raw.components(separatedBy: "\r\n").first ?? ""
+        let parts = firstLine.split(separator: " ")
+        let method = parts.first.map(String.init) ?? ""
+        let path = parts.dropFirst().first.map(String.init) ?? ""
+
+        // 只接受 GET
+        guard method == "GET" || method == "OPTIONS" else {
+            sendResponse(405, "Method Not Allowed", conn: conn)
+            return
+        }
+
+        // OPTIONS 预检
+        if method == "OPTIONS" {
+            let resp = "HTTP/1.1 204 No Content\r\nAccess-Control-Allow-Methods: GET\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n"
+            conn.send(content: Data(resp.utf8), completion: .idempotent)
+            DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { conn.cancel() }
+            return
+        }
+
+        // 先执行 action，再返回响应
         DispatchQueue.main.async { [weak self] in
             switch path {
             case "/start":
                 self?.pulseTimer?.cancel()
                 self?.pulseTimer = nil
                 self?.onStart?()
+                self?.sendResponse(200, "ok", conn: conn)
 
             case "/stop":
                 self?.pulseTimer?.cancel()
                 self?.pulseTimer = nil
                 self?.onStop?()
+                self?.sendResponse(200, "ok", conn: conn)
 
             case "/pulse":
                 self?.pulseTimer?.cancel()
@@ -95,14 +120,11 @@ class ControlServer {
                 }
                 self?.pulseTimer = work
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0, execute: work)
+                self?.sendResponse(200, "ok", conn: conn)
 
             default:
-                break
+                self?.sendResponse(404, "Not Found", conn: conn)
             }
         }
-
-        let resp = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nAccess-Control-Allow-Origin: null\r\nConnection: close\r\n\r\nok"
-        conn.send(content: Data(resp.utf8), completion: .idempotent)
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { conn.cancel() }
     }
 }
