@@ -65,9 +65,7 @@ struct SettingsView: View {
                         Text(L("settings.httpPort"))
                             .font(.subheadline)
                         Spacer()
-                        TextField("", value: $settings.httpPort, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 80)
+                        PortField(port: $settings.httpPort)
                     }
 
                     Button(L("settings.configHooks")) {
@@ -105,6 +103,35 @@ struct SettingsView: View {
             }
             Slider(value: value, in: range)
         }
+    }
+}
+
+// ============================================================
+// MARK: - 端口输入框（防抖：仅在提交时生效）
+// ============================================================
+struct PortField: View {
+    @Binding var port: Int
+    @State private var text: String = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        TextField("", text: $text)
+            .textFieldStyle(.roundedBorder)
+            .frame(width: 80)
+            .focused($isFocused)
+            .onAppear { text = String(port) }
+            .onSubmit { commit() }
+            .onChange(of: isFocused) { focused in
+                if !focused { commit() }
+            }
+    }
+
+    private func commit() {
+        guard let value = Int(text), value >= 1024, value <= 65535 else {
+            text = String(port)  // 无效输入，回滚
+            return
+        }
+        if value != port { port = value }
     }
 }
 

@@ -50,11 +50,9 @@ class HooksInstaller {
         请帮我配置 EdgeGlow 的 hooks。读取 ~/.claude/settings.json，在 "hooks" 字段中添加（保留已有内容）：
 
         - UserPromptSubmit → curl -s \(base)/start
-        - PreToolUse → curl -s \(base)/start
-        - PostToolUse → curl -s \(base)/pulse
-        - PermissionRequest → curl -s \(base)/pulse
         - Stop → curl -s \(base)/stop
 
+        只需要这两个 hook：用户发消息时开启流光，Claude 完成回复时关闭。
         格式：[{"hooks": [{"type": "command", "command": "curl -s <url>"}]}]
         修改完成后保存文件。
         """
@@ -86,8 +84,6 @@ class HooksInstaller {
         请帮我配置 EdgeGlow 的 hooks。在 ~/.hermes/agent-hooks/ 目录下创建以下脚本（设置 chmod +x）：
 
         - pre_llm_call.sh → curl -s \(base)/start
-        - pre_tool_call.sh → curl -s \(base)/start
-        - post_tool_call.sh → curl -s \(base)/pulse
         - on_session_end.sh → curl -s \(base)/stop
 
         每个脚本内容：#!/bin/bash\\ncurl -s <url>
