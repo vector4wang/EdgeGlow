@@ -47,9 +47,15 @@ class AppSettings: ObservableObject {
         didSet { defaults.set(brightness, forKey: Key.brightness.rawValue) }
     }
     @Published var httpPort: Int {
+        willSet {
+            let clamped = min(max(newValue, 1024), 65535)
+            if clamped != newValue {
+                DispatchQueue.main.async { [weak self] in
+                    self?.httpPort = clamped
+                }
+            }
+        }
         didSet {
-            let clamped = min(max(httpPort, 1024), 65535)
-            if clamped != httpPort { httpPort = clamped; return }
             defaults.set(httpPort, forKey: Key.httpPort.rawValue)
             if httpPort != oldValue { onPortChanged?(httpPort) }
         }

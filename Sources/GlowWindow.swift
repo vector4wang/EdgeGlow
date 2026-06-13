@@ -246,9 +246,36 @@ class GlowWindow {
         FileHandle.standardError.write(Data("[edge-glow] ✨ 流光开启\n".utf8))
     }
 
-    /// 等待用户输入 — 直接淡出消失
+    /// 等待用户输入 — 短暂闪亮后保持显示
     func pulse() {
-        hide()
+        guard settings.enabled else { return }
+        stopFlow()
+        isVisible = true
+
+        // 短暂亮闪：opacity 从当前值 → 1.3x → 保持 1.0
+        let currentOpacity = ringLayer.presentation()?.opacity ?? 1.0
+        let flashPeak = min(currentOpacity * 1.3, 1.0)
+
+        ringLayer.removeAnimation(forKey: "pulse-flash")
+
+        let flash = CABasicAnimation(keyPath: "opacity")
+        flash.fromValue = currentOpacity
+        flash.toValue = flashPeak
+        flash.duration = 0.15
+        flash.autoreverses = true
+        flash.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+
+        let group = CAAnimationGroup()
+        group.animations = [flash]
+        group.duration = 0.3
+        group.fillMode = .forwards
+        group.isRemovedOnCompletion = false
+        ringLayer.add(group, forKey: "pulse-flash")
+
+        // 保持静态显示（不淡出）
+        ringLayer.opacity = 1.0
+
+        FileHandle.standardError.write(Data("[edge-glow] 💫 脉冲闪亮\n".utf8))
     }
 
     func hide() {

@@ -41,7 +41,7 @@ class ControlServer {
         }
 
         listener?.newConnectionHandler = { [weak self] conn in
-            conn.start(queue: .global())
+            conn.start(queue: .main)
             self?.handle(conn)
         }
         listener?.start(queue: .global())
@@ -83,7 +83,15 @@ class ControlServer {
     }
 
     private func sendResponse(_ code: Int, _ body: String, conn: NWConnection) {
-        let resp = "HTTP/1.1 \(code) OK\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)"
+        let statusText: String
+        switch code {
+        case 200: statusText = "OK"
+        case 204: statusText = "No Content"
+        case 404: statusText = "Not Found"
+        case 405: statusText = "Method Not Allowed"
+        default: statusText = "Unknown"
+        }
+        let resp = "HTTP/1.1 \(code) \(statusText)\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)"
         conn.send(content: Data(resp.utf8), completion: .idempotent)
         DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { conn.cancel() }
     }
@@ -133,6 +141,7 @@ class ControlServer {
                 if self.activeCount == 0 {
                     self.onPulse?()
                 }
+                self.resetSafetyTimer()
                 self.sendResponse(200, "ok", conn: conn)
 
             default:
