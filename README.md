@@ -47,6 +47,10 @@ EdgeGlow 让你的屏幕边缘亮起流光：
   <img src="Resources/demo.gif" width="100%" alt="EdgeGlow Demo">
 </p>
 
+<p align="center">
+  <img src="images/效果界面.jpg" width="100%" alt="EdgeGlow Effect">
+</p>
+
 | 状态 | 视觉效果 | 触发方式 |
 |:----:|:--------:|:--------:|
 | 🟢 **思考中** | 流光沿屏幕边缘旋转流动 | `UserPromptSubmit` / `PreToolUse` |
@@ -246,6 +250,10 @@ chmod +x ~/.hermes/agent-hooks/*.sh
 ### ⚙️ 设置
 
 点击菜单栏 ✦ 图标 → 设置：
+
+<p align="center">
+  <img src="images/设置界面.jpg" width="80%" alt="Settings">
+</p>
 
 | 分类 | 设置项 | 说明 | 默认值 |
 |:----:|:------:|:----:|:------:|
