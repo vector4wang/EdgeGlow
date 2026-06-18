@@ -44,7 +44,7 @@ EdgeGlow 让你的屏幕边缘亮起流光：
 ### 🎬 效果预览
 
 <p align="center">
-  <img src="Resources/demo.mp4" width="100%" alt="EdgeGlow Demo">
+  <img src="Resources/demo.gif" width="100%" alt="EdgeGlow Demo">
 </p>
 
 <p align="center">
@@ -372,7 +372,7 @@ EdgeGlow puts a glowing marquee around your screen edges:
 > **One glance at your screen edge tells you everything.**
 
 <p align="center">
-  <img src="Resources/demo.mp4" width="100%" alt="EdgeGlow Demo">
+  <img src="Resources/demo.gif" width="100%" alt="EdgeGlow Demo">
 </p>
 
 ### 🚀 Install
