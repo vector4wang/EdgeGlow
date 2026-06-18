@@ -53,7 +53,7 @@ EdgeGlow 让你的屏幕边缘亮起流光：
 
 | 状态 | 视觉效果 | 触发方式 |
 |:----:|:--------:|:--------:|
-| 🟢 **思考中** | 流光沿屏幕边缘旋转流动 | `UserPromptSubmit` / `PreToolUse` |
+| 🟢 **思考中** | 流光沿屏幕边缘旋转流动 / 边框明暗呼吸 | `UserPromptSubmit` / `PreToolUse` |
 | 🔴 **完成/等待** | 流光 1.5s 淡出消失 | `PostToolUse` / `Stop` |
 
 ---
@@ -95,7 +95,7 @@ EdgeGlow 让你的屏幕边缘亮起流光：
           │                 │  │ 主色线 · 亮芯   │  │    │
           │                 │  └────────────────┘  │    │
           │                 │                      │    │
-          │                 │  Timer (60fps)       │    │
+          │                 │  CVDisplayLink       │    │
           │                 │  → lineDashPhase     │    │
           │                 │  → CAKeyframeAnim    │    │
           │                 │    (颜色循环)        │    │
@@ -164,7 +164,7 @@ AI Agent 执行操作
 
 #### 方式一：下载 Release（推荐）
 
-前往 [Releases](../../releases) 下载最新 `EdgeGlow-v1.1.0.zip`，解压后打开。
+前往 [Releases](../../releases) 下载最新 `EdgeGlow-v1.3.0.zip`，解压后打开。
 
 > ⚠️ 首次打开如遇「无法验证开发者」提示，请 **右键 → 打开** 即可。
 
@@ -248,11 +248,12 @@ chmod +x ~/.hermes/agent-hooks/*.sh
 |:----:|:------:|:----:|:------:|
 | 通用 | 启用流光 | 总开关，关闭后 Agent 不会触发流光 | ✅ ON |
 | 通用 | 开机自启动 | 登录系统时自动启动 | ❌ OFF |
-| 外观 | 颜色主题 | 4 种预设主题 | 🌈 炫酷 |
+| 外观 | 颜色主题 | 5 种预设主题 | 🌈 虹彩 |
 | 外观 | 速度 | 流光旋转速度 (1-10) | 5 |
-| 外观 | 光带宽度 | 光效粗细 (1-10) | 5 |
-| 外观 | 亮度 | 整体亮度 (0.3-1.0) | 0.85 |
+| 外观 | 光带宽度 | 光效粗细 (1-20) | 7 |
+| 外观 | 亮度 | 整体亮度 (0.3-1.0) | 1.0 |
 | 外观 | 旋转方向 | 顺时针 / 逆时针 | 顺时针 |
+| 外观 | 显示模式 | 跑马灯 / 呼吸灯 | 呼吸灯 |
 | 高级 | HTTP 端口 | 控制服务端口 (1024-65535) | 9876 |
 | 高级 | 配置 Agent Hooks | 查看引导词，复制发给 Agent | — |
 
@@ -260,6 +261,7 @@ chmod +x ~/.hermes/agent-hooks/*.sh
 
 | 主题 | 色系 | 适用场景 |
 |:----:|:----:|:--------:|
+| ✨ 虹彩 | 高饱和霓虹紫蓝青粉橙金 | **默认**，Apple Intelligence 风格 |
 | 🌈 炫酷 | 彩虹全色谱 | 日常使用，视觉冲击最强 |
 | 🌊 柔和 | 低饱和蓝紫 | 夜间 / 长时间使用 |
 | 🔥 烈焰 | 红橙黄暖色 | 热情满满地写代码 |
@@ -311,7 +313,7 @@ Sources/
 │   ├── AppSettings.swift   # UserDefaults 持久化 · Combine 响应式
 │   └── SettingsView.swift  # SwiftUI 设置界面
 └── Themes/
-    └── ColorTheme.swift    # 4 种预设颜色主题
+    └── ColorTheme.swift    # 5 种预设颜色主题
 
 Resources/
 ├── EdgeGlow.icns           # App 图标
@@ -375,7 +377,7 @@ EdgeGlow puts a glowing marquee around your screen edges:
 
 > **Requires macOS 13.0 (Ventura) or later** · Intel & Apple Silicon
 
-Download `EdgeGlow-v1.1.0.zip` from [Releases](../../releases), unzip and open.
+Download `EdgeGlow-v1.3.0.zip` from [Releases](../../releases), unzip and open.
 
 ```bash
 git clone https://github.com/vector4wang/EdgeGlow.git && cd EdgeGlow
@@ -388,7 +390,7 @@ Go to Settings → Configure Agent Hooks → copy the prompt → paste it into y
 
 ### ⚙️ Settings
 
-Menu bar ✦ → Settings: color theme (4 presets), speed, width, brightness, direction, auto-start, HTTP port.
+Menu bar ✦ → Settings: color theme (5 presets), speed, width, brightness, direction, glow mode (flow / breathe), auto-start, HTTP port.
 
 ### ⚠️ Notes
 
