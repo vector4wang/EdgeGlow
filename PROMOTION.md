@@ -16,7 +16,9 @@ EdgeGlow is a free, open-source macOS menu bar app that adds a colorful glowing 
 No more guessing if your AI is still working. One glance at your screen edge tells you everything.
 
 **Features:**
-- 4 color themes (Rainbow, Pastel, Fire, Ice)
+- 5 color themes (Iridescent, Rainbow, Pastel, Fire, Ice)
+- Iridescent theme simulates iPhone Apple Intelligence edge glow — 20-segment perimeter coloring
+- Two glow modes: Flow (marquee) + Breathe (opacity pulse)
 - Multi-monitor support
 - Adjustable speed, width, brightness, direction
 - Bilingual (Chinese & English)
@@ -32,7 +34,7 @@ I built EdgeGlow because when I use Claude Code for programming, I can never tel
 
 So I made a tiny macOS app that shows a glowing marquee around my screen when the AI is working. It's that simple.
 
-The tech is all SwiftUI + CALayer — the marquee uses 4 layered CAShapeLayer with Gaussian blur to create a realistic neon glow effect, driven by a 60fps Timer for the flow animation.
+The tech is all SwiftUI + CALayer — the marquee uses 4 layered CAShapeLayer with Gaussian blur to create a realistic neon glow effect, driven by CVDisplayLink for screen-sync animation. The iridescent theme uses 20-segment perimeter coloring with staggered color cycles to simulate iPhone's Apple Intelligence edge glow.
 
 It's free, open-source (MIT), and weighs only 892KB. Would love your feedback!
 
@@ -57,8 +59,9 @@ The solution: HTTP hooks in the agent config call a local server (127.0.0.1:9876
 Technical details:
 - Pure Swift + SwiftUI, no dependencies
 - 4-layer CAShapeLayer with CIGaussianBlur for neon effect
-- Timer-driven lineDashPhase animation (not CABasicAnimation — more reliable across window state changes)
-- Reference counting for multi-terminal support
+- `Timer`-driven lineDashPhase animation (not CABasicAnimation — more reliable across window state changes)
+- Reference counting for multi-terminal support (PID-based with 120s safety timeout)
+- Reference counting for multi-terminal support (PID-based with 120s safety timeout)
 - Universal Binary (arm64 + x86_64), ~892KB zipped
 
 Source: https://github.com/vector4wang/EdgeGlow

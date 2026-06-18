@@ -116,9 +116,9 @@ The performance is also great: updating a single `CGFloat` property at 60fps use
 
 ---
 
-## The 4-Layer Glow Effect
+## The 4-Layer + 20-Segment Glow Effect
 
-To create a realistic neon glow, I stack 4 `CAShapeLayer` instances:
+To create a realistic neon glow, I stack 4 `CAShapeLayer` instances. But the real magic is the **iridescent theme** (default): the screen edge is split into 20 segments, each with a different hue (purple → blue → cyan → pink → orange → gold), mimicking iPhone's Apple Intelligence Siri edge glow. The colors cycle continuously with staggered time offsets, and Gaussian blur at segment boundaries creates smooth transitions.
 
 ### Layer Configuration
 
@@ -207,7 +207,7 @@ Now `/start` increments the count, `/stop` decrements it. The glow only hides wh
 
 What if an agent crashes without sending `/stop`? The reference count would stay > 0 forever.
 
-Solution: a 60-second safety timeout:
+Solution: a 120-second safety timeout:
 
 ```swift
 private func resetSafetyTimer() {

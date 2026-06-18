@@ -28,7 +28,10 @@ HTTP hooks in the agent config call a local server (127.0.0.1:9876), which trigg
 
 **Pure Swift + SwiftUI, no dependencies**
 
-**4-layer CAShapeLayer with CIGaussianBlur for neon effect:**
+**5-layer CAShapeLayer with 20-segment perimeter coloring + CIGaussianBlur for neon effect:**
+The iridescent theme (default) splits the screen edge into 20 segments, each with a different hue (purple→blue→cyan→pink→orange→gold), mimicking iPhone's Apple Intelligence Siri edge glow. Smooth color transitions are achieved through Gaussian blur at segment boundaries.
+
+**4-layer glow stack:**
 ```
 Layer 1: Wide line, CIGaussianBlur(12), low alpha → outer glow
 Layer 2: Medium line, blur(8), medium alpha → mid glow
@@ -36,7 +39,7 @@ Layer 3: Thin line, blur(2), high alpha → core line
 Layer 4: Thinnest line, no blur, full alpha → bright center
 ```
 
-**Timer-driven lineDashPhase animation**
+**CVDisplayLink-driven lineDashPhase animation (replaced Timer)**
 
 My first approach used `CABasicAnimation` on `lineDashPhase`:
 ```swift
@@ -49,7 +52,7 @@ shape.add(anim, forKey: "flow")
 
 This worked... until the window was hidden and shown again. Core Animation would lose the animation state, and the marquee would freeze or even reverse direction.
 
-I switched to a `Timer` at 60fps that directly updates `lineDashPhase`:
+I switched to CVDisplayLink, which fires in sync with the screen refresh rate and is not affected by RunLoop blocking:
 ```swift
 flowTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [weak self] _ in
     let speed = perimeter / animationDuration
@@ -62,11 +65,11 @@ flowTimer = Timer.scheduledTimer(withTimeInterval: 1.0/60.0, repeats: true) { [w
 
 This is bulletproof — no dependency on Core Animation's animation system, no state loss on window visibility changes.
 
-**Reference counting for multi-terminal support**
+**PID-based tracking for multi-terminal support**
 
 If you have multiple Claude Code terminals running, one calling `/stop` would kill the glow even though others are still active.
 
-Solution: reference counting. `/start` increments, `/stop` decrements. Only hide when count reaches 0. Plus a 60-second safety timeout in case an agent crashes without sending `/stop`.
+Solution: PID-based tracking. Each terminal registers with its unique PID. `/start` adds PID, `/pulse` or `/stop` removes it. Glow only hides when the active PID set is empty. Plus a 120-second safety timeout per PID in case an agent crashes.
 
 **Security considerations:**
 - HTTP server uses `NWListener` with `acceptLocalOnly = true`
@@ -92,10 +95,10 @@ Solution: reference counting. `/start` increments, `/stop` decrements. Only hide
 ### 可能的技术问题 & 回答
 
 **Q: Why not use CABasicAnimation?**
-A: Core Animation loses animation state when windows are hidden/shown. The marquee would freeze or reverse direction. Timer-driven animation bypasses this entirely.
+A: Core Animation loses animation state when windows are hidden/shown. The marquee would freeze or reverse direction. CVDisplayLink-driven animation bypasses this entirely and is synced to the screen refresh rate.
 
-**Q: Why 4 layers instead of one?**
-A: To simulate a real neon light tube. The outer layers have wide lines + high blur for the glow halo, inner layers have thin lines + low blur for the bright core. Stacking them creates a realistic neon effect.
+**Q: Why 4 layers + 20 segments?**
+A: The 4 layers (with different blur levels) simulate a real neon light tube — outer glow, mid glow, core line, bright center. The 20 segments around the perimeter each get a different hue, creating the iridescent gradient effect that mimics iPhone's Apple Intelligence Siri glow.
 
 **Q: What about power consumption?**
 A: The Timer runs at 60fps but only updates a single CGFloat property (lineDashPhase). CPU usage is effectively 0%. The 4 CAShapeLayer instances with CIFilter are GPU-accelerated.
@@ -107,7 +110,7 @@ A: Yes, any agent that can make HTTP requests. Just configure the agent to call 
 A: Claude Code's hook system is the official integration point. It's more flexible than a plugin because it works with any agent that supports hooks or can make HTTP calls.
 
 **Q: What happens if the agent crashes?**
-A: The 60-second safety timeout automatically resets the glow. If no `/start` is received for 60 seconds, the reference count resets to 0 and the glow fades out.
+A: The 120-second safety timeout automatically resets the glow. If no `/start` is received for 120 seconds, the PID is removed and the glow fades out.
 
 ---
 

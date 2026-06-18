@@ -42,7 +42,9 @@ That's it. Dead simple.
 
 ![Features Interface](https://github.com/vector4wang/EdgeGlow/raw/main/images/功能界面.jpg)
 
-- 🌈 **4 color themes** (Rainbow, Pastel, Fire, Ice)
+- 🎨 **5 color themes** (Iridescent, Rainbow, Pastel, Fire, Ice)
+- ✨ **Iridescent theme** simulates iPhone Apple Intelligence edge glow — 20-segment perimeter coloring
+- 🔄 **Two glow modes**: Flow (marquee) + Breathe (opacity pulse)
 - 🖥️ **Multi-monitor support** (auto-adapts to display changes)
 - ⚙️ **Customizable** (speed, width, brightness, direction)
 - 💨 **Ultra lightweight** (~0% CPU, ~50MB RAM, only 892KB)
@@ -53,7 +55,7 @@ That's it. Dead simple.
 
 Pure Swift + SwiftUI, CALayer animations, NWListener for the HTTP server. No third-party dependencies.
 
-The interesting part was the animation. I use 4 layered CAShapeLayer instances with CIGaussianBlur to create a realistic neon glow effect. The flow animation is driven by a 60fps Timer (not CABasicAnimation, which loses state on window visibility changes).
+The interesting part was the animation. I use 4 layered CAShapeLayer instances with CIGaussianBlur to create a realistic neon glow effect. The flow animation is driven by CVDisplayLink (screen-sync, not affected by RunLoop). The iridescent theme uses 20 segments around the perimeter, each with a staggered color cycle, creating a smooth gradient that mimics iPhone's Apple Intelligence Siri glow.
 
 ### Links
 
@@ -122,7 +124,7 @@ Sources/
 │   ├── AppSettings.swift   # UserDefaults + Combine reactive
 │   └── SettingsView.swift  # SwiftUI settings UI
 └── Themes/
-    └── ColorTheme.swift    # 4 color themes
+    └── ColorTheme.swift    # 5 color themes
 ```
 
 ### Links
@@ -305,7 +307,7 @@ Or just open EdgeGlow settings → Configure Agent Hooks → copy the prompt →
 
 ### Features
 
-- 🌈 4 color themes
+- 🌈 5 color themes
 - 🖥️ Multi-monitor support
 - 💨 ~0% CPU, 50MB RAM, only 892KB
 - 🔒 Privacy first (localhost only, no data collection)

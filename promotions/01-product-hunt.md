@@ -37,11 +37,16 @@ One glance at your screen edge tells you everything. No more guessing.
 
 ![Settings Interface](https://github.com/vector4wang/EdgeGlow/raw/main/images/设置界面.jpg)
 
-✨ **4 Color Themes**
+✨ **5 Color Themes**
+- ✨ Iridescent (neon purple-blue-cyan-pink-orange-gold, iPhone Apple Intelligence style — **default**)
 - 🌈 Rainbow (vibrant, eye-catching)
 - 🌊 Pastel (calm, night-friendly)
 - 🔥 Fire (warm, energetic)
 - ❄️ Ice (cool, focused)
+
+🔄 **Two Glow Modes**
+- Flow: marquee rotates along screen edges (CVDisplayLink-driven, screen-sync)
+- Breathe: opacity pulse animation, calmer and more subtle
 
 🖥️ **Multi-Monitor Support**
 - Automatically adapts to all connected displays
@@ -49,7 +54,7 @@ One glance at your screen edge tells you everything. No more guessing.
 
 ⚙️ **Fully Customizable**
 - Adjustable speed (1-10)
-- Adjustable width (1-10)
+- Adjustable width (1-20)
 - Adjustable brightness (0.3-1.0)
 - Clockwise/counterclockwise direction
 
@@ -93,11 +98,11 @@ Layer 3: Thin line + blur(2) + high alpha → core line
 Layer 4: Thinnest line + no blur + full alpha → bright center
 ```
 
-The flow animation is driven by a 60fps Timer that directly updates `lineDashPhase` — not CABasicAnimation, which loses state when windows are hidden/shown.
+The flow animation is driven by CVDisplayLink (screen-sync, not affected by RunLoop blocking) that directly updates `lineDashPhase`. The iridescent theme uses 20-segment perimeter coloring with staggered color cycles — each segment has a different hue, creating a smooth gradient around the screen edge that mimics iPhone's Apple Intelligence Siri glow.
 
 ### Multi-Terminal Support
 
-If you have multiple Claude Code terminals running, EdgeGlow uses reference counting. One terminal calling `/stop` won't kill the glow if others are still active. Plus a 60-second safety timeout in case an agent crashes without sending `/stop`.
+If you have multiple Claude Code terminals running, EdgeGlow uses PID-based tracking. Each terminal registers with its PID, and the glow only fades when all active PIDs are done. Plus a 120-second safety timeout in case an agent crashes without sending `/stop`.
 
 It's free, open-source (MIT), and weighs only 892KB. Would love your feedback!
 

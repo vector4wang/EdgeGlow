@@ -65,7 +65,8 @@ https://github.com/vector4wang/EdgeGlow
 ```
 Built a macOS app that:
 ✅ Shows neon glow around screen
-✅ 4 color themes
+✅ 5 color themes (default: iridescent, iPhone Apple Intelligence style)
+✅ Two glow modes: flow + breathe
 ✅ Multi-monitor support
 ✅ 892KB size
 ✅ 0% CPU usage
