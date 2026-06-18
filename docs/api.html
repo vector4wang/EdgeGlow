@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EdgeGlow API 接口文档</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --card-bg: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --green: #3fb950;
+    --orange: #d2991d;
+    --red: #f85149;
+    --purple: #a371f7;
+    --code-bg: #1c2128;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 40px 20px;
+  }
+  .container { max-width: 960px; margin: 0 auto; }
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  h1 .badge {
+    font-size: 0.75rem;
+    background: var(--accent);
+    color: #fff;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .subtitle { color: var(--text-muted); margin-bottom: 32px; font-size: 0.95rem; }
+  h2 {
+    font-size: 1.4rem;
+    margin: 40px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 { font-size: 1.1rem; margin: 24px 0 12px; color: var(--accent); }
+
+  .info-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+  }
+  .info-card p { color: var(--text-muted); }
+  .info-card code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+
+  .endpoint {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .endpoint-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .method {
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 3px 10px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .method.get { background: #1a3a2a; color: var(--green); }
+  .method.options { background: #1a2a3a; color: var(--accent); }
+  .endpoint-path {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.95rem;
+    color: var(--text);
+  }
+  .endpoint-body { padding: 20px 24px; }
+  .endpoint-body p { margin-bottom: 8px; color: var(--text-muted); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.9rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--text-muted); font-weight: 600; font-size: 0.8rem; text-transform: uppercase; }
+  td:first-child { font-family: "SF Mono", "Fira Code", monospace; color: var(--accent); }
+  td:last-child code { background: var(--code-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  pre code { color: var(--text); }
+
+  .response-json {
+    background: #1a2a1a;
+    border-color: #1a3a2a;
+  }
+  .response-json code { color: #7ee787; }
+
+  .note {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4e;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 16px 0;
+    font-size: 0.9rem;
+    color: #a5a5d0;
+  }
+  .note::before { content: "💡 "; }
+
+  .state-diagram {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    margin: 20px 0;
+    text-align: center;
+  }
+  .state-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+  }
+  .state-box {
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+  .state-box.active { border-color: var(--green); color: var(--green); background: #1a2a1a; }
+  .state-box.idle { border-color: var(--text-muted); color: var(--text-muted); background: #1a1a1a; }
+  .state-arrow { color: var(--text-muted); font-size: 1.2rem; }
+  .state-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+  .toc { list-style: none; }
+  .toc li { margin: 4px 0; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .footer {
+    margin-top: 60px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>✦ EdgeGlow <span class="badge">API v1.3</span></h1>
+<p class="subtitle">本地 HTTP 控制接口 — 让 Agent Hooks 驱动屏幕边缘流光效果</p>
+
+<!-- 目录 -->
+<h2>目录</h2>
+<ul class="toc">
+  <li><a href="#overview">1. 概述</a></li>
+  <li><a href="#endpoints">2. 接口列表</a></li>
+  <li><a href="#hook-integration">3. Hooks 集成</a></li>
+  <li><a href="#state-machine">4. 状态机</a></li>
+  <li><a href="#errors">5. 错误码</a></li>
+  <li><a href="#examples">6. 调用示例</a></li>
+</ul>
+
+<!-- 1. 概述 -->
+<h2 id="overview">1. 概述</h2>
+<div class="info-card">
+  <p><strong>协议：</strong>HTTP/1.1</p>
+  <p><strong>方法：</strong>仅支持 <code>GET</code> / <code>OPTIONS</code></p>
+  <p><strong>地址：</strong><code>http://127.0.0.1:{port}</code>（默认端口 <code>9876</code>，可配置 1024–65535）</p>
+  <p><strong>绑定：</strong>仅本地回环（<code>acceptLocalOnly = true</code>），不接受外部连接</p>
+  <p><strong>数据格式：</strong>请求参数通过 URL Query String 传递；响应为纯文本或 JSON</p>
+  <p><strong>CORS：</strong>允许所有来源（<code>Access-Control-Allow-Origin: *</code>）</p>
+</div>
+
+<div class="note">
+  EdgeGlow 采用 <strong>PID 追踪机制</strong>：每个终端窗口通过 <code>?pid=$PPID</code> 标识自己，支持多终端并行工作。当所有活跃终端都结束后，流光才会关闭。
+</div>
+
+<!-- 2. 接口列表 -->
+<h2 id="endpoints">2. 接口列表</h2>
+
+<!-- /start -->
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-path">/start?pid={pid}</span>
+  </div>
+  <div class="endpoint-body">
+    <p><strong>功能：</strong>开启屏幕边缘流光效果。注册 PID 到活跃终端集合，启动流光动画。</p>
+    <table>
+      <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+      <tr><td>pid</td><td>int</td><td>是</td><td>终端进程 PID，用于多窗口追踪，推荐使用 <code>$PPID</code></td></tr>
+    </table>
+    <p><strong>响应：</strong></p>
+    <pre class="response-json"><code>HTTP/1.1 200 OK
+Content-Length: 2
+Connection: close
+
+ok</code></pre>
+    <p><strong>副作用：</strong>PID 加入 activePIDs 集合；启动 120 秒安全超时定时器（超时自动移除 PID）。</p>
+  </div>
+</div>
+
+<!-- /stop -->
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-path">/stop?pid={pid}</span>
+  </div>
+  <div class="endpoint-body">
+    <p><strong>功能：</strong>移除 PID，若无其他活跃终端则关闭流光。</p>
+    <table>
+      <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+      <tr><td>pid</td><td>int</td><td>是</td><td>要移除的终端进程 PID</td></tr>
+    </table>
+    <p><strong>响应：</strong></p>
+    <pre class="response-json"><code>HTTP/1.1 200 OK
+ok</code></pre>
+    <p><strong>副作用：</strong>PID 从 activePIDs 移除，取消安全超时定时器。仅当 activePIDs 为空时调用 <code>onStop</code> 关闭流光。</p>
+  </div>
+</div>
+
+<!-- /pulse -->
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-path">/pulse?pid={pid}</span>
+  </div>
+  <div class="endpoint-body">
+    <p><strong>功能：</strong>脉冲效果 — 移除 PID，若所有终端都已完成则触发一次脉冲闪烁后淡出。</p>
+    <table>
+      <tr><th>参数</th><th>类型</th><th>必填</th><th>说明</th></tr>
+      <tr><td>pid</td><td>int</td><td>是</td><td>要移除的终端进程 PID</td></tr>
+    </table>
+    <p><strong>响应：</strong></p>
+    <pre class="response-json"><code>HTTP/1.1 200 OK
+ok</code></pre>
+    <p><strong>副作用：</strong>PID 移除 + 取消超时定时器。activePIDs 为空时调用 <code>onPulse</code>（脉冲 → 1.5s 淡出）。</p>
+  </div>
+</div>
+
+<!-- /status -->
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-path">/status</span>
+  </div>
+  <div class="endpoint-body">
+    <p><strong>功能：</strong>查询当前状态，返回活跃终端数量和 PID 列表。</p>
+    <p><strong>参数：</strong>无</p>
+    <p><strong>响应：</strong></p>
+    <pre class="response-json"><code>HTTP/1.1 200 OK
+Content-Length: 45
+Connection: close
+
+{"active_count":2,"pids":[12345,12346]}</code></pre>
+    <table>
+      <tr><th>字段</th><th>类型</th><th>说明</th></tr>
+      <tr><td>active_count</td><td>int</td><td>当前活跃终端数量</td></tr>
+      <tr><td>pids</td><td>int[]</td><td>活跃终端 PID 列表（升序）</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- /start_legacy -->
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-path">/start_legacy</span>
+    <span class="badge" style="font-size:0.7rem;background:var(--orange);color:#000;padding:2px 8px;border-radius:10px;">deprecated</span>
+  </div>
+  <div class="endpoint-body">
+    <p><strong>功能：</strong>开启流光（无 PID 追踪，向后兼容旧版 hook 脚本）。</p>
+    <p><strong>参数：</strong>无</p>
+    <p><strong>响应：</strong><code>200 OK</code></p>
+    <div class="note">建议迁移到带 <code>?pid=</code> 的新接口，以支持多终端并行工作。</div>
+  </div>
+</div>
+
+<!-- /stop_legacy -->
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method get">GET</span>
+    <span class="endpoint-path">/stop_legacy</span>
+    <span class="badge" style="font-size:0.7rem;background:var(--orange);color:#000;padding:2px 8px;border-radius:10px;">deprecated</span>
+  </div>
+  <div class="endpoint-body">
+    <p><strong>功能：</strong>关闭流光（无 PID 追踪）。</p>
+    <p><strong>参数：</strong>无</p>
+    <p><strong>响应：</strong><code>200 OK</code></p>
+  </div>
+</div>
+
+<!-- OPTIONS -->
+<div class="endpoint">
+  <div class="endpoint-header">
+    <span class="method options">OPTIONS</span>
+    <span class="endpoint-path">/*</span>
+  </div>
+  <div class="endpoint-body">
+    <p><strong>功能：</strong>CORS 预检请求。所有路径均支持。</p>
+    <p><strong>响应：</strong></p>
+    <pre><code>HTTP/1.1 204 No Content
+Access-Control-Allow-Methods: GET
+Access-Control-Allow-Origin: *
+Connection: close</code></pre>
+  </div>
+</div>
+
+<!-- 3. Hooks 集成 -->
+<h2 id="hook-integration">3. Hooks 集成</h2>
+
+<h3>3.1 Claude Code</h3>
+<p>在 <code>~/.claude/settings.json</code> 中配置：</p>
+<pre><code>{
+  "hooks": {
+    "UserPromptSubmit": [{
+      "hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/start?pid=$PPID\""}]
+    }],
+    "PreToolUse": [{
+      "hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/start?pid=$PPID\""}]
+    }],
+    "PostToolUse": [{
+      "hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/pulse?pid=$PPID\""}]
+    }],
+    "Stop": [{
+      "hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/pulse?pid=$PPID\""}]
+    }]
+  }
+}</code></pre>
+
+<h3>3.2 Hermes Agent</h3>
+<p>在 <code>~/.hermes/agent-hooks/</code> 下创建脚本：</p>
+<pre><code># pre_llm_call.sh
+#!/bin/bash
+curl -s "http://127.0.0.1:9876/start?pid=$PPID"
+
+# on_llm_response.sh
+#!/bin/bash
+curl -s "http://127.0.0.1:9876/pulse?pid=$PPID"</code></pre>
+
+<h3>3.3 Hook 触发时机</h3>
+<table>
+  <tr><th>Hook 事件</th><th>API 调用</th><th>效果</th></tr>
+  <tr><td>UserPromptSubmit</td><td>GET /start?pid=$PPID</td><td>用户输入时 → 开启流光</td></tr>
+  <tr><td>PreToolUse</td><td>GET /start?pid=$PPID</td><td>AI 调用工具前 → 保持流光</td></tr>
+  <tr><td>PostToolUse</td><td>GET /pulse?pid=$PPID</td><td>工具调用完成 → 脉冲后淡出</td></tr>
+  <tr><td>Stop</td><td>GET /pulse?pid=$PPID</td><td>Agent 停止 → 脉冲后淡出</td></tr>
+</table>
+
+<!-- 4. 状态机 -->
+<h2 id="state-machine">4. 状态机</h2>
+<div class="state-diagram">
+  <div class="state-row">
+    <div class="state-box idle">⚫ 空闲<br><span class="state-label">activePIDs = []</span></div>
+    <span class="state-arrow">→ /start →</span>
+    <div class="state-box active">🔴 思考中<br><span class="state-label">activePIDs = [p1, p2, ...]</span></div>
+    <span class="state-arrow">→ /pulse 或 /stop →</span>
+    <div class="state-box idle">⚫ 空闲<br><span class="state-label">activePIDs = []</span></div>
+  </div>
+  <p style="margin-top:16px;color:var(--text-muted);font-size:0.85rem;">
+    多终端并行：每个 <code>/start</code> 增加一个 PID，每个 <code>/pulse</code> 或 <code>/stop</code> 移除一个 PID。<br>
+    仅当 <strong>所有 PID 都被移除</strong> 后，流光才会关闭。
+  </p>
+  <p style="margin-top:8px;color:var(--text-muted);font-size:0.85rem;">
+    安全兜底：每个 PID 注册后启动 <strong>120 秒超时定时器</strong>，超时自动移除，防止僵尸 PID 导致流光常亮。
+  </p>
+</div>
+
+<!-- 5. 错误码 -->
+<h2 id="errors">5. 错误码</h2>
+<table>
+  <tr><th>状态码</th><th>含义</th><th>触发条件</th></tr>
+  <tr><td>200 OK</td><td>成功</td><td>正常请求处理完成</td></tr>
+  <tr><td>204 No Content</td><td>预检通过</td><td>OPTIONS 请求</td></tr>
+  <tr><td>404 Not Found</td><td>路径不存在</td><td>请求了未定义的路径</td></tr>
+  <tr><td>405 Method Not Allowed</td><td>方法不允许</td><td>使用了 GET/OPTIONS 以外的方法</td></tr>
+</table>
+
+<!-- 6. 调用示例 -->
+<h2 id="examples">6. 调用示例</h2>
+
+<h3>6.1 基本调用</h3>
+<pre><code># 开启流光（终端 A）
+curl -s "http://127.0.0.1:9876/start?pid=$$"
+
+# 开启流光（终端 B，并行）
+curl -s "http://127.0.0.1:9876/start?pid=$$"
+
+# 终端 A 完成 → 脉冲淡出
+curl -s "http://127.0.0.1:9876/pulse?pid=12345"
+
+# 查询当前状态
+curl -s "http://127.0.0.1:9876/status"
+# → {"active_count":1,"pids":[12346]}
+
+# 终端 B 完成 → 脉冲淡出（流光关闭）
+curl -s "http://127.0.0.1:9876/pulse?pid=12346"</code></pre>
+
+<h3>6.2 自定义端口</h3>
+<pre><code># 在设置中修改端口为 8888 后：
+curl -s "http://127.0.0.1:8888/start?pid=$PPID"
+curl -s "http://127.0.0.1:8888/pulse?pid=$PPID"
+curl -s "http://127.0.0.1:8888/status"</code></pre>
+
+<h3>6.3 手动控制（不依赖 Hooks）</h3>
+<pre><code># 长时任务前后手动控光
+curl -s "http://127.0.0.1:9876/start?pid=$$"
+sleep 10  # 模拟耗时操作
+curl -s "http://127.0.0.1:9876/pulse?pid=$$"</code></pre>
+
+<div class="footer">
+  EdgeGlow v1.3.0 &nbsp;|&nbsp; macOS 13.0+ &nbsp;|&nbsp; Swift 5.9+ &nbsp;|&nbsp;
+  <a href="https://github.com/vector4wang/EdgeGlow" style="color:var(--accent);">GitHub</a>
+</div>
+
+</div>
+</body>
+</html>
