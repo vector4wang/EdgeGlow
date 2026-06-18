@@ -3,12 +3,15 @@ set -e
 
 # ============================================================
 # EdgeGlow 构建脚本
-# 用法: ./build.sh [dmg] [sign] [notarize]
+# 用法: ./build.sh [-s] [-n] [-d]
+#   -s  代码签名
+#   -n  公证
+#   -d  打包 DMG
 # ============================================================
 
 APP_NAME="EdgeGlow"
 BUNDLE_ID="com.edgeglow.app"
-VERSION="1.1.0"
+VERSION="1.3.0"
 BUILD_DIR="Build"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 RELEASE_DIR="Release"
@@ -19,7 +22,20 @@ APPLE_ID="${APPLE_ID:-}"       # Apple ID 邮箱
 TEAM_ID="${TEAM_ID:-}"         # Team ID
 APP_PASSWORD="${APP_PASSWORD:-}"  # App-specific password
 
-# 颜色输出
+# ============================================================
+# 参数解析
+# ============================================================
+DO_SIGN=false
+DO_NOTARIZE=false
+DO_DMG=false
+while getopts "snd" opt; do
+    case $opt in
+        s) DO_SIGN=true ;;
+        n) DO_NOTARIZE=true ;;
+        d) DO_DMG=true ;;
+        *) echo "用法: $0 [-s] [-n] [-d]" && exit 1 ;;
+    esac
+done
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
@@ -43,32 +59,62 @@ info "编译 Swift 源文件 (Universal Binary)..."
 mkdir -p "${BUILD_DIR}"
 
 SOURCE_FILES=$(find Sources -name "*.swift" -type f)
+CURRENT_ARCH=$(uname -m)
 
-# 分别编译 arm64 和 x86_64
-swiftc -o "${BUILD_DIR}/${APP_NAME}_arm64" \
-    ${SOURCE_FILES} \
-    -framework Cocoa \
-    -framework Network \
-    -framework SwiftUI \
-    -framework ServiceManagement \
-    -O \
-    -target arm64-apple-macos13
+# 根据当前架构，只编译另一架构
+if [ "$CURRENT_ARCH" = "arm64" ]; then
+    swiftc -o "${BUILD_DIR}/${APP_NAME}" \
+        ${SOURCE_FILES} \
+        -framework Cocoa \
+        -framework Network \
+        -framework SwiftUI \
+        -framework ServiceManagement \
+        -framework UserNotifications \
+        -O \
+        -target arm64-apple-macos13
 
-swiftc -o "${BUILD_DIR}/${APP_NAME}_x86_64" \
-    ${SOURCE_FILES} \
-    -framework Cocoa \
-    -framework Network \
-    -framework SwiftUI \
-    -framework ServiceManagement \
-    -O \
-    -target x86_64-apple-macos13
+    swiftc -o "${BUILD_DIR}/${APP_NAME}_x86_64" \
+        ${SOURCE_FILES} \
+        -framework Cocoa \
+        -framework Network \
+        -framework SwiftUI \
+        -framework ServiceManagement \
+        -framework UserNotifications \
+        -O \
+        -target x86_64-apple-macos13
 
-# 合并为 Universal Binary
-lipo -create -output "${BUILD_DIR}/${APP_NAME}" \
-    "${BUILD_DIR}/${APP_NAME}_arm64" \
-    "${BUILD_DIR}/${APP_NAME}_x86_64"
+    lipo -create -output "${BUILD_DIR}/${APP_NAME}_universal" \
+        "${BUILD_DIR}/${APP_NAME}" \
+        "${BUILD_DIR}/${APP_NAME}_x86_64"
+    mv "${BUILD_DIR}/${APP_NAME}_universal" "${BUILD_DIR}/${APP_NAME}"
+    rm -f "${BUILD_DIR}/${APP_NAME}_x86_64"
+else
+    swiftc -o "${BUILD_DIR}/${APP_NAME}" \
+        ${SOURCE_FILES} \
+        -framework Cocoa \
+        -framework Network \
+        -framework SwiftUI \
+        -framework ServiceManagement \
+        -framework UserNotifications \
+        -O \
+        -target x86_64-apple-macos13
 
-rm -f "${BUILD_DIR}/${APP_NAME}_arm64" "${BUILD_DIR}/${APP_NAME}_x86_64"
+    swiftc -o "${BUILD_DIR}/${APP_NAME}_arm64" \
+        ${SOURCE_FILES} \
+        -framework Cocoa \
+        -framework Network \
+        -framework SwiftUI \
+        -framework ServiceManagement \
+        -framework UserNotifications \
+        -O \
+        -target arm64-apple-macos13
+
+    lipo -create -output "${BUILD_DIR}/${APP_NAME}_universal" \
+        "${BUILD_DIR}/${APP_NAME}" \
+        "${BUILD_DIR}/${APP_NAME}_arm64"
+    mv "${BUILD_DIR}/${APP_NAME}_universal" "${BUILD_DIR}/${APP_NAME}"
+    rm -f "${BUILD_DIR}/${APP_NAME}_arm64"
+fi
 
 info "编译完成"
 
@@ -96,7 +142,7 @@ info "App Bundle 组装完成 → ${APP_BUNDLE}"
 # ============================================================
 # Step 3: 代码签名 (可选)
 # ============================================================
-if [[ "$*" == *"sign"* ]] || [[ "$*" == *"notarize"* ]]; then
+if $DO_SIGN || $DO_NOTARIZE; then
     if [ -z "$DEV_ID" ]; then
         warn "未设置 DEV_ID，使用 ad-hoc 签名"
         codesign --force --deep --sign - "${APP_BUNDLE}"
@@ -113,7 +159,7 @@ fi
 # ============================================================
 # Step 4: 公证 (可选)
 # ============================================================
-if [[ "$*" == *"notarize"* ]]; then
+if $DO_NOTARIZE; then
     if [ -z "$APPLE_ID" ] || [ -z "$TEAM_ID" ] || [ -z "$APP_PASSWORD" ]; then
         error "公证需要设置 APPLE_ID, TEAM_ID, APP_PASSWORD 环境变量"
     fi
@@ -138,7 +184,7 @@ fi
 # ============================================================
 # Step 5: 打包 DMG (可选)
 # ============================================================
-if [[ "$*" == *"dmg"* ]]; then
+if $DO_DMG; then
     info "打包 DMG..."
 
     mkdir -p "${RELEASE_DIR}"
@@ -175,16 +221,16 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 info "构建成功！"
 echo ""
 echo "  App:    ${APP_BUNDLE}"
-if [[ "$*" == *"dmg"* ]]; then
+if $DO_DMG; then
 echo "  DMG:    ${DMG_PATH}"
 fi
 echo ""
 echo "  运行:   open ${APP_BUNDLE}"
-if [[ "$*" != *"dmg"* ]]; then
+if ! $DO_DMG; then
 echo ""
-echo "  打包:   ./build.sh dmg"
-echo "  签名:   ./build.sh sign"
-echo "  公证:   ./build.sh sign notarize dmg"
+echo "  打包:   ./build.sh -d"
+echo "  签名:   ./build.sh -s"
+echo "  公证:   ./build.sh -s -n -d"
 fi
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

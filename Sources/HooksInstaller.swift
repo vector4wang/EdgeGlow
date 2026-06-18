@@ -16,10 +16,9 @@ class HooksInstaller {
         alert.addButton(withTitle: L("hooks.cancel"))
 
         let response = alert.runModal()
-        let index = response.rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
-        switch index {
-        case 0: showClaudeCodePrompt(port: port)
-        case 1: showHermesPrompt(port: port)
+        switch response {
+        case .alertFirstButtonReturn: showClaudeCodePrompt(port: port)
+        case .alertSecondButtonReturn: showHermesPrompt(port: port)
         default: break
         }
     }
@@ -46,14 +45,24 @@ class HooksInstaller {
     /// 生成发给 Claude Code 的提示词
     private static func claudeCodePrompt(port: Int) -> String {
         let base = "http://127.0.0.1:\(port)"
+        let startCmd = #"curl -s "\#(base)/start?pid=$PPID""#
+        let pulseCmd = #"curl -s "\#(base)/pulse?pid=$PPID""#
         return """
         请帮我配置 EdgeGlow 的 hooks。读取 ~/.claude/settings.json，在 "hooks" 字段中添加（保留已有内容）：
 
-        - UserPromptSubmit → curl -s \(base)/start
-        - Stop → curl -s \(base)/stop
+        {
+          "hooks": {
+            "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "\(startCmd)"}]}],
+            "PreToolUse":       [{"hooks": [{"type": "command", "command": "\(startCmd)"}]}],
+            "PostToolUse":      [{"hooks": [{"type": "command", "command": "\(pulseCmd)"}]}],
+            "Stop":             [{"hooks": [{"type": "command", "command": "\(pulseCmd)"}]}]
+          }
+        }
 
-        只需要这两个 hook：用户发消息时开启流光，Claude 完成回复时关闭。
-        格式：[{"hooks": [{"type": "command", "command": "curl -s <url>"}]}]
+        说明：
+        - $PPID 是终端进程ID，用于多窗口追踪
+        - UserPromptSubmit/PreToolUse → /start 开启流光
+        - PostToolUse/Stop → /pulse 闪亮后自动关闭
         修改完成后保存文件。
         """
     }
@@ -80,13 +89,20 @@ class HooksInstaller {
     /// 生成发给 Hermes Agent 的提示词
     private static func hermesPrompt(port: Int) -> String {
         let base = "http://127.0.0.1:\(port)"
+        let startCmd = #"curl -s \#(base)/start?pid=$PPID"#
+        let pulseCmd = #"curl -s \#(base)/pulse?pid=$PPID"#
         return """
         请帮我配置 EdgeGlow 的 hooks。在 ~/.hermes/agent-hooks/ 目录下创建以下脚本（设置 chmod +x）：
 
-        - pre_llm_call.sh → curl -s \(base)/start
-        - on_session_end.sh → curl -s \(base)/stop
+        - pre_llm_call.sh:
+          #!/bin/bash
+          \(startCmd)
 
-        每个脚本内容：#!/bin/bash\\ncurl -s <url>
+        - on_llm_response.sh:
+          #!/bin/bash
+          \(pulseCmd)
+
+        说明：$PPID 用于多终端追踪，防止一个终端结束时误关其他终端的流光。
         创建完成后确认。
         """
     }

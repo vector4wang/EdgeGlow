@@ -8,6 +8,7 @@ enum ThemeName: String, CaseIterable, Codable {
     case pastel  = "pastel"
     case fire    = "fire"
     case ice     = "ice"
+    case iridescent = "iridescent"
     case custom  = "custom"
 }
 
@@ -57,12 +58,24 @@ struct ColorTheme {
         (0.85, 0.92, 1.00, 1),
     ])
 
+    /// Apple Intelligence 虹彩：紫 → 蓝 → 青 → 粉 → 橙 → 金（高饱和霓虹）
+    static let iridescent = ColorTheme(colors: [
+        (0.65, 0.20, 0.95, 1), (0.35, 0.30, 1.00, 1),
+        (0.15, 0.50, 1.00, 1), (0.05, 0.70, 0.98, 1),
+        (0.10, 0.85, 0.90, 1), (0.20, 0.90, 0.75, 1),
+        (0.50, 0.85, 0.40, 1), (0.80, 0.70, 0.10, 1),
+        (1.00, 0.50, 0.10, 1), (1.00, 0.25, 0.35, 1),
+        (0.95, 0.15, 0.60, 1), (0.75, 0.25, 0.85, 1),
+        (0.65, 0.20, 0.95, 1),
+    ])
+
     static func theme(for name: ThemeName) -> ColorTheme {
         switch name {
         case .rainbow: return .rainbow
         case .pastel:  return .pastel
         case .fire:    return .fire
         case .ice:     return .ice
+        case .iridescent: return .iridescent
         case .custom:  return .rainbow  // fallback
         }
     }

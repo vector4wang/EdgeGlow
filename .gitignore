@@ -17,3 +17,5 @@ DerivedData/
 # IDE
 .idea/
 .vscode/
+.claudeagent
+.claude

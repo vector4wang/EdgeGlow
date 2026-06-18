@@ -39,6 +39,9 @@ class L10n {
         "settings.direction":      ("旋转方向", "Direction"),
         "settings.clockwise":      ("顺时针", "Clockwise"),
         "settings.counterCW":      ("逆时针", "Counterclockwise"),
+        "settings.mode":           ("流光模式", "Glow Mode"),
+        "mode.flow":               ("跑马灯", "Flow"),
+        "mode.breathe":            ("呼吸灯", "Breathe"),
 
         "settings.advanced":       ("高级", "Advanced"),
         "settings.httpPort":       ("HTTP 端口", "HTTP Port"),
@@ -51,6 +54,7 @@ class L10n {
         "theme.pastel":            ("🌊 柔和", "🌊 Pastel"),
         "theme.fire":              ("🔥 烈焰", "🔥 Fire"),
         "theme.ice":               ("❄️ 冰雪", "❄️ Ice"),
+        "theme.iridescent":        ("✨ 虹彩", "✨ Iridescent"),
 
         // MARK: - 菜单栏
         "menu.enabled":            ("✓ 流光已启用", "✓ Glow Enabled"),
@@ -77,6 +81,11 @@ class L10n {
                                     "Copy the prompt below and paste it into Hermes Agent. The agent will configure hooks for you:\n\n%@"),
         "hooks.hermes.copy":       ("复制提示词", "Copy Prompt"),
         "hooks.hermes.close":      ("关闭", "Close"),
+
+        // MARK: - 启动提示
+        "launch.notification.title": ("✦ EdgeGlow 已就绪", "✦ EdgeGlow Ready"),
+        "launch.notification.body":  ("点击菜单栏图标查看使用说明\n当 Agent 工作时，流光会自动亮起",
+                                      "Click menu bar icon for usage\nGlow activates when Agent is working"),
     ]
 
     func translate(_ key: String) -> String {

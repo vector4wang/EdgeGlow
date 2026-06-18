@@ -44,17 +44,24 @@ struct SettingsView: View {
                             Text(L("theme.pastel")).tag(ThemeName.pastel)
                             Text(L("theme.fire")).tag(ThemeName.fire)
                             Text(L("theme.ice")).tag(ThemeName.ice)
+                            Text(L("theme.iridescent")).tag(ThemeName.iridescent)
                         }
                         .pickerStyle(.segmented)
                     }
 
                     sliderRow(L("settings.speed"), value: $settings.speed, range: 1...10, format: "%.0f")
-                    sliderRow(L("settings.width"), value: $settings.width, range: 1...10, format: "%.0f")
+                    sliderRow(L("settings.width"), value: $settings.width, range: 1...20, format: "%.0f")
                     sliderRow(L("settings.brightness"), value: $settings.brightness, range: 0.3...1.0, format: "%.2f")
 
                     Picker(L("settings.direction"), selection: $settings.clockwise) {
                         Text(L("settings.clockwise")).tag(true)
                         Text(L("settings.counterCW")).tag(false)
+                    }
+                    .pickerStyle(.segmented)
+
+                    Picker(L("settings.mode"), selection: $settings.glowMode) {
+                        Text(L("mode.flow")).tag(GlowMode.flow)
+                        Text(L("mode.breathe")).tag(GlowMode.breathe)
                     }
                     .pickerStyle(.segmented)
 

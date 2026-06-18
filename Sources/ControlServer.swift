@@ -2,7 +2,7 @@ import Foundation
 import Network
 
 // ============================================================
-// MARK: - HTTP 控制服务器
+// MARK: - HTTP 控制服务器（支持多终端 PID 追踪）
 // ============================================================
 class ControlServer {
     private var listener: NWListener?
@@ -10,15 +10,19 @@ class ControlServer {
     var onStop: (() -> Void)?
     var onPulse: (() -> Void)?
     private let port: UInt16
-    private var pulseTimer: DispatchWorkItem?
-    private var safetyTimer: DispatchWorkItem?
 
-    /// 引用计数：多个 Agent 窗口同时工作时，流光不会误灭
-    private var activeCount = 0 {
+    /// 活跃终端 PID 集合（多窗口并行工作时，流光不会误灭）
+    private var activePIDs = Set<Int>() {
         didSet {
-            FileHandle.standardError.write(Data("[edge-glow] 🔢 activeCount = \(activeCount)\n".utf8))
+            log("🔢 活跃终端: \(activePIDs.sorted())")
         }
     }
+
+    /// 安全兜底定时器：清理长时间无心跳的 PID
+    private var safetyTimers = [Int: DispatchWorkItem]()
+
+    /// PID 超时时间（秒）- 超时自动移除
+    private let pidTimeout: TimeInterval = 120
 
     init(port: UInt16 = 9876) {
         self.port = port
@@ -29,30 +33,28 @@ class ControlServer {
         param.acceptLocalOnly = true
 
         guard let nwPort = NWEndpoint.Port(rawValue: port) else {
-            FileHandle.standardError.write(Data("[edge-glow] ❌ 无效端口: \(port)\n".utf8))
+            log("❌ 无效端口: \(port)")
             return
         }
 
         do {
             listener = try NWListener(using: param, on: nwPort)
         } catch {
-            FileHandle.standardError.write(Data("[edge-glow] ❌ 端口 \(port) 绑定失败: \(error)\n".utf8))
+            log("❌ 端口 \(port) 绑定失败: \(error)")
             return
         }
 
         listener?.newConnectionHandler = { [weak self] conn in
-            conn.start(queue: .main)
+            conn.start(queue: .global())  // 后台队列，避免阻塞主线程动画
             self?.handle(conn)
         }
         listener?.start(queue: .global())
-        FileHandle.standardError.write(Data("[edge-glow] HTTP → http://127.0.0.1:\(port)\n".utf8))
+        log("HTTP → http://127.0.0.1:\(port)")
     }
 
     func stop() {
-        pulseTimer?.cancel()
-        pulseTimer = nil
-        safetyTimer?.cancel()
-        safetyTimer = nil
+        safetyTimers.values.forEach { $0.cancel() }
+        safetyTimers.removeAll()
         listener?.cancel()
         listener = nil
     }
@@ -92,15 +94,35 @@ class ControlServer {
         default: statusText = "Unknown"
         }
         let resp = "HTTP/1.1 \(code) \(statusText)\r\nContent-Length: \(body.utf8.count)\r\nConnection: close\r\n\r\n\(body)"
-        conn.send(content: Data(resp.utf8), completion: .idempotent)
-        DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { conn.cancel() }
+        conn.send(content: Data(resp.utf8), completion: .contentProcessed({ _ in
+            conn.cancel()
+        }))
+    }
+
+    /// 解析 URL 参数
+    private func parseQuery(_ path: String) -> (action: String, pid: Int?) {
+        let parts = path.split(separator: "?", maxSplits: 1)
+        let action = String(parts[0])
+
+        guard parts.count > 1 else { return (action, nil) }
+
+        // 解析 ?pid=1234
+        let queryString = parts[1]
+        let params = queryString.split(separator: "&")
+        for param in params {
+            let kv = param.split(separator: "=", maxSplits: 1)
+            if kv.count == 2, kv[0] == "pid", let pid = Int(kv[1]) {
+                return (action, pid)
+            }
+        }
+        return (action, nil)
     }
 
     private func processRequest(_ raw: String, conn: NWConnection) {
         let firstLine = raw.components(separatedBy: "\r\n").first ?? ""
         let parts = firstLine.split(separator: " ")
         let method = parts.first.map(String.init) ?? ""
-        let path = parts.dropFirst().first.map(String.init) ?? ""
+        let fullPath = parts.dropFirst().first.map(String.init) ?? ""
 
         // 只接受 GET
         guard method == "GET" || method == "OPTIONS" else {
@@ -111,38 +133,65 @@ class ControlServer {
         // OPTIONS 预检
         if method == "OPTIONS" {
             let resp = "HTTP/1.1 204 No Content\r\nAccess-Control-Allow-Methods: GET\r\nAccess-Control-Allow-Origin: *\r\nConnection: close\r\n\r\n"
-            conn.send(content: Data(resp.utf8), completion: .idempotent)
-            DispatchQueue.global().asyncAfter(deadline: .now() + 0.3) { conn.cancel() }
+            conn.send(content: Data(resp.utf8), completion: .contentProcessed({ _ in
+                conn.cancel()
+            }))
             return
         }
+
+        // 解析 action 和 pid
+        let (action, pid) = parseQuery(fullPath)
 
         // 先执行 action，再返回响应
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            switch path {
+
+            switch action {
             case "/start":
-                self.pulseTimer?.cancel()
-                self.pulseTimer = nil
-                self.activeCount += 1
+                if let pid = pid {
+                    self.activePIDs.insert(pid)
+                    self.resetSafetyTimer(for: pid)
+                }
                 self.onStart?()
-                self.resetSafetyTimer()
                 self.sendResponse(200, "ok", conn: conn)
 
             case "/stop":
-                self.pulseTimer?.cancel()
-                self.pulseTimer = nil
-                self.activeCount = max(0, self.activeCount - 1)
-                if self.activeCount == 0 { self.onStop?() }
+                if let pid = pid {
+                    self.activePIDs.remove(pid)
+                    self.safetyTimers[pid]?.cancel()
+                    self.safetyTimers[pid] = nil
+                }
+                if self.activePIDs.isEmpty {
+                    self.onStop?()
+                }
                 self.sendResponse(200, "ok", conn: conn)
 
             case "/pulse":
-                self.pulseTimer?.cancel()
-                self.activeCount = max(0, self.activeCount - 1)
-                if self.activeCount == 0 {
+                if let pid = pid {
+                    self.activePIDs.remove(pid)
+                    self.safetyTimers[pid]?.cancel()
+                    self.safetyTimers[pid] = nil
+                }
+                if self.activePIDs.isEmpty {
                     self.onPulse?()
                 }
-                self.resetSafetyTimer()
                 self.sendResponse(200, "ok", conn: conn)
+
+            // 向后兼容：不带 pid 的旧接口
+            case "/start_legacy":
+                self.onStart?()
+                self.sendResponse(200, "ok", conn: conn)
+
+            case "/stop_legacy":
+                self.onStop?()
+                self.sendResponse(200, "ok", conn: conn)
+
+            case "/status":
+                // 返回当前状态
+                let status = """
+                {"active_count":\(self.activePIDs.count),"pids":\(self.activePIDs.sorted())}
+                """
+                self.sendResponse(200, status, conn: conn)
 
             default:
                 self.sendResponse(404, "Not Found", conn: conn)
@@ -150,18 +199,20 @@ class ControlServer {
         }
     }
 
-    /// 安全兜底：60s 无新 /start 自动归零（防止 Agent 崩溃导致计数卡住）
-    private func resetSafetyTimer() {
-        safetyTimer?.cancel()
+    /// 为每个 PID 设置安全超时定时器（防止终端崩溃导致计数卡住）
+    private func resetSafetyTimer(for pid: Int) {
+        safetyTimers[pid]?.cancel()
         let work = DispatchWorkItem { [weak self] in
             guard let self = self else { return }
-            if self.activeCount > 0 {
-                FileHandle.standardError.write(Data("[edge-glow] ⏰ 60s 无活动，自动归零\n".utf8))
-                self.activeCount = 0
-                self.onStop?()
+            if self.activePIDs.contains(pid) {
+                log("⏰ PID \(pid) 超时 \(Int(self.pidTimeout))s，自动移除")
+                self.activePIDs.remove(pid)
+                if self.activePIDs.isEmpty {
+                    self.onStop?()
+                }
             }
         }
-        safetyTimer = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 60.0, execute: work)
+        safetyTimers[pid] = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + pidTimeout, execute: work)
     }
 }

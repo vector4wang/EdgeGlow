@@ -3,6 +3,14 @@ import Combine
 import ServiceManagement
 
 // ============================================================
+// MARK: - 流光模式
+// ============================================================
+enum GlowMode: String, CaseIterable {
+    case flow    = "flow"     // 跑马灯
+    case breathe = "breathe"  // 呼吸灯
+}
+
+// ============================================================
 // MARK: - 应用设置 (UserDefaults 持久化)
 // ============================================================
 class AppSettings: ObservableObject {
@@ -22,6 +30,7 @@ class AppSettings: ObservableObject {
         case httpPort       = "http_port"
         case clockwise      = "glow_clockwise"
         case customColors   = "custom_colors"
+        case glowMode       = "glow_mode"
     }
 
     // MARK: - Published Properties
@@ -66,6 +75,9 @@ class AppSettings: ObservableObject {
     @Published var customColors: [String] {
         didSet { defaults.set(customColors, forKey: Key.customColors.rawValue) }
     }
+    @Published var glowMode: GlowMode {
+        didSet { defaults.set(glowMode.rawValue, forKey: Key.glowMode.rawValue) }
+    }
 
     // MARK: - Computed
     var currentTheme: ColorTheme {
@@ -89,17 +101,19 @@ class AppSettings: ObservableObject {
     private init() {
         self.enabled = UserDefaults.standard.object(forKey: Key.enabled.rawValue) as? Bool ?? true
         self.autoStart = UserDefaults.standard.bool(forKey: Key.autoStart.rawValue)
-        let savedTheme = UserDefaults.standard.string(forKey: Key.themeName.rawValue) ?? ThemeName.rainbow.rawValue
+        let savedTheme = UserDefaults.standard.string(forKey: Key.themeName.rawValue) ?? ThemeName.iridescent.rawValue
         // 迁移：旧版中文 raw value → 英文
         let migrated: [String: String] = ["炫酷": "rainbow", "柔和": "pastel", "烈焰": "fire", "冰雪": "ice", "自定义": "custom"]
         let normalized = migrated[savedTheme] ?? savedTheme
         self.themeName = ThemeName(rawValue: normalized) ?? .rainbow
         self.speed = UserDefaults.standard.object(forKey: Key.speed.rawValue) as? Double ?? 5
-        self.width = UserDefaults.standard.object(forKey: Key.width.rawValue) as? Double ?? 5
-        self.brightness = UserDefaults.standard.object(forKey: Key.brightness.rawValue) as? Double ?? 0.85
+        self.width = UserDefaults.standard.object(forKey: Key.width.rawValue) as? Double ?? 7
+        self.brightness = UserDefaults.standard.object(forKey: Key.brightness.rawValue) as? Double ?? 1.0
         self.httpPort = UserDefaults.standard.object(forKey: Key.httpPort.rawValue) as? Int ?? 9876
         self.clockwise = UserDefaults.standard.object(forKey: Key.clockwise.rawValue) as? Bool ?? true
         self.customColors = UserDefaults.standard.stringArray(forKey: Key.customColors.rawValue) ?? []
+        let savedMode = UserDefaults.standard.string(forKey: Key.glowMode.rawValue) ?? GlowMode.breathe.rawValue
+        self.glowMode = GlowMode(rawValue: savedMode) ?? .breathe
     }
 
     // MARK: - Auto Start
@@ -119,7 +133,7 @@ class AppSettings: ObservableObject {
                 isApplyingAutoStart = true
                 autoStart = !autoStart
                 isApplyingAutoStart = false
-                FileHandle.standardError.write(Data("[edge-glow] 自启动设置失败: \(error)\n".utf8))
+                log("自启动设置失败: \(error)")
             }
         }
     }
