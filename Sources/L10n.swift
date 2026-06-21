@@ -30,6 +30,7 @@ class L10n {
         "settings.enabled.help":   ("关闭后 AI 不会触发流光效果", "Glow won't activate when AI is working"),
         "settings.autoStart":      ("开机自启动", "Launch at Login"),
         "settings.autoStart.help": ("登录系统时自动启动 EdgeGlow", "Start EdgeGlow automatically at login"),
+        "settings.autoStart.unsupported": ("开机自启动需要 macOS 13 或更高版本", "Launch at Login requires macOS 13 or later"),
 
         "settings.appearance":     ("外观", "Appearance"),
         "settings.theme":          ("颜色主题", "Color Theme"),

@@ -11,7 +11,7 @@ set -e
 
 APP_NAME="EdgeGlow"
 BUNDLE_ID="com.edgeglow.app"
-VERSION="1.3.1"
+VERSION="1.3.2"
 BUILD_DIR="Build"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 RELEASE_DIR="Release"
@@ -71,7 +71,7 @@ if [ "$CURRENT_ARCH" = "arm64" ]; then
         -framework ServiceManagement \
         -framework UserNotifications \
         -O \
-        -target arm64-apple-macos13
+        -target arm64-apple-macos12
 
     swiftc -o "${BUILD_DIR}/${APP_NAME}_x86_64" \
         ${SOURCE_FILES} \
@@ -81,7 +81,7 @@ if [ "$CURRENT_ARCH" = "arm64" ]; then
         -framework ServiceManagement \
         -framework UserNotifications \
         -O \
-        -target x86_64-apple-macos13
+        -target x86_64-apple-macos12
 
     lipo -create -output "${BUILD_DIR}/${APP_NAME}_universal" \
         "${BUILD_DIR}/${APP_NAME}" \
@@ -97,7 +97,7 @@ else
         -framework ServiceManagement \
         -framework UserNotifications \
         -O \
-        -target x86_64-apple-macos13
+        -target x86_64-apple-macos12
 
     swiftc -o "${BUILD_DIR}/${APP_NAME}_arm64" \
         ${SOURCE_FILES} \
@@ -107,7 +107,7 @@ else
         -framework ServiceManagement \
         -framework UserNotifications \
         -O \
-        -target arm64-apple-macos13
+        -target arm64-apple-macos12
 
     lipo -create -output "${BUILD_DIR}/${APP_NAME}_universal" \
         "${BUILD_DIR}/${APP_NAME}" \

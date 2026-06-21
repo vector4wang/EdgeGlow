@@ -2,7 +2,7 @@
 
 > 分析日期：2026-06-13
 > 项目：claude-edge-glow-swift (EdgeGlow)
-> 技术栈：Swift 5.9+ / macOS 13.0+ / 纯 Apple 框架 / 无第三方依赖
+> 技术栈：Swift 5.9+ / macOS 12.0+ / 纯 Apple 框架 / 无第三方依赖
 
 ---
 
