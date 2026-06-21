@@ -160,11 +160,11 @@ AI Agent 执行操作
 
 ### 🚀 安装
 
-> **系统要求：macOS 13.0 (Ventura) 及以上** · 支持 Intel & Apple Silicon
+> **系统要求：macOS 12.0 (Monterey) 及以上** · 支持 Intel & Apple Silicon
 
 #### 方式一：下载 Release（推荐）
 
-前往 [Releases](../../releases) 下载最新 `EdgeGlow-v1.3.0.zip`，解压后打开。
+前往 [Releases](../../releases) 下载最新 `EdgeGlow-v1.3.2.zip`，解压后打开。
 
 > ⚠️ 首次打开如遇「无法验证开发者」提示，请 **右键 → 打开** 即可。
 
@@ -247,7 +247,7 @@ chmod +x ~/.hermes/agent-hooks/*.sh
 | 分类 | 设置项 | 说明 | 默认值 |
 |:----:|:------:|:----:|:------:|
 | 通用 | 启用流光 | 总开关，关闭后 Agent 不会触发流光 | ✅ ON |
-| 通用 | 开机自启动 | 登录系统时自动启动 | ❌ OFF |
+| 通用 | 开机自启动 | 登录系统时自动启动（需 macOS 13+） | ❌ OFF |
 | 外观 | 颜色主题 | 5 种预设主题 | 🌈 虹彩 |
 | 外观 | 速度 | 流光旋转速度 (1-10) | 5 |
 | 外观 | 光带宽度 | 光效粗细 (1-20) | 7 |
@@ -351,7 +351,7 @@ build.sh                    # 构建脚本（Universal Binary + .app 打包）
 
 ### 📦 系统要求
 
-- **macOS 13.0+ (Ventura)**
+- **macOS 12.0+ (Monterey)**
 - 支持 Intel (x86_64) 和 Apple Silicon (arm64)
 - Universal Binary，一个包通吃所有 Mac
 
@@ -377,9 +377,9 @@ EdgeGlow puts a glowing marquee around your screen edges:
 
 ### 🚀 Install
 
-> **Requires macOS 13.0 (Ventura) or later** · Intel & Apple Silicon
+> **Requires macOS 12.0 (Monterey) or later** · Intel & Apple Silicon
 
-Download `EdgeGlow-v1.3.0.zip` from [Releases](../../releases), unzip and open.
+Download `EdgeGlow-v1.3.2.zip` from [Releases](../../releases), unzip and open.
 
 ```bash
 git clone https://github.com/vector4wang/EdgeGlow.git && cd EdgeGlow
@@ -404,7 +404,7 @@ Menu bar ✦ → Settings: color theme (5 presets), speed, width, brightness, di
 
 ### 📦 Requirements
 
-- **macOS 13.0+ (Ventura)**
+- **macOS 12.0+ (Monterey)**
 - Intel (x86_64) and Apple Silicon (arm64)
 - Universal Binary
 

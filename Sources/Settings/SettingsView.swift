@@ -22,71 +22,96 @@ struct SettingsView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-
-                    // MARK: - 通用
-                    sectionHeader(L("settings.general"))
-
-                    Toggle(L("settings.enabled"), isOn: $settings.enabled)
-                        .help(L("settings.enabled.help"))
-
-                    Toggle(L("settings.autoStart"), isOn: $settings.autoStart)
-                        .help(L("settings.autoStart.help"))
-
-                    // MARK: - 外观
-                    sectionHeader(L("settings.appearance"))
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text(L("settings.theme"))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                        Picker(L("settings.theme"), selection: $settings.themeName) {
-                            Text(L("theme.rainbow")).tag(ThemeName.rainbow)
-                            Text(L("theme.pastel")).tag(ThemeName.pastel)
-                            Text(L("theme.fire")).tag(ThemeName.fire)
-                            Text(L("theme.ice")).tag(ThemeName.ice)
-                            Text(L("theme.iridescent")).tag(ThemeName.iridescent)
-                        }
-                        .pickerStyle(.segmented)
-                    }
-
-                    sliderRow(L("settings.speed"), value: $settings.speed, range: 1...10, format: "%.0f")
-                    sliderRow(L("settings.width"), value: $settings.width, range: 1...20, format: "%.0f")
-                    sliderRow(L("settings.brightness"), value: $settings.brightness, range: 0.3...1.0, format: "%.2f")
-
-                    Picker(L("settings.direction"), selection: $settings.clockwise) {
-                        Text(L("settings.clockwise")).tag(true)
-                        Text(L("settings.counterCW")).tag(false)
-                    }
-                    .pickerStyle(.segmented)
-
-                    Picker(L("settings.mode"), selection: $settings.glowMode) {
-                        Text(L("mode.flow")).tag(GlowMode.flow)
-                        Text(L("mode.breathe")).tag(GlowMode.breathe)
-                    }
-                    .pickerStyle(.segmented)
-
-                    // MARK: - 高级
-                    sectionHeader(L("settings.advanced"))
-
-                    HStack {
-                        Text(L("settings.httpPort"))
-                            .font(.subheadline)
-                        Spacer()
-                        PortField(port: $settings.httpPort)
-                    }
-
-                    Button(L("settings.configHooks")) {
-                        HooksInstaller.showConfigDialog(port: settings.httpPort)
-                    }
-
-                    Text(String(format: L("settings.hooksHint"), "http://127.0.0.1:\(settings.httpPort)"))
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    generalSection
+                    appearanceSection
+                    advancedSection
                 }
                 .padding(20)
             }
         }
         .frame(width: 380, height: 560)
+    }
+
+    // MARK: - Sections
+    private var generalSection: some View {
+        Group {
+            sectionHeader(L("settings.general"))
+
+            Toggle(L("settings.enabled"), isOn: $settings.enabled)
+                .help(L("settings.enabled.help"))
+
+            Toggle(L("settings.autoStart"), isOn: $settings.autoStart)
+                .disabled(!supportsLaunchAtLogin)
+                .help(supportsLaunchAtLogin ? L("settings.autoStart.help") : L("settings.autoStart.unsupported"))
+
+            if !supportsLaunchAtLogin {
+                Text(L("settings.autoStart.unsupported"))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+
+    private var supportsLaunchAtLogin: Bool {
+        if #available(macOS 13.0, *) { return true }
+        return false
+    }
+
+    private var appearanceSection: some View {
+        Group {
+            sectionHeader(L("settings.appearance"))
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(L("settings.theme"))
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Picker(L("settings.theme"), selection: $settings.themeName) {
+                    Text(L("theme.rainbow")).tag(ThemeName.rainbow)
+                    Text(L("theme.pastel")).tag(ThemeName.pastel)
+                    Text(L("theme.fire")).tag(ThemeName.fire)
+                    Text(L("theme.ice")).tag(ThemeName.ice)
+                    Text(L("theme.iridescent")).tag(ThemeName.iridescent)
+                }
+                .pickerStyle(.segmented)
+            }
+
+            sliderRow(L("settings.speed"), value: $settings.speed, range: 1...10, format: "%.0f")
+            sliderRow(L("settings.width"), value: $settings.width, range: 1...20, format: "%.0f")
+            sliderRow(L("settings.brightness"), value: $settings.brightness, range: 0.3...1.0, format: "%.2f")
+
+            Picker(L("settings.direction"), selection: $settings.clockwise) {
+                Text(L("settings.clockwise")).tag(true)
+                Text(L("settings.counterCW")).tag(false)
+            }
+            .pickerStyle(.segmented)
+
+            Picker(L("settings.mode"), selection: $settings.glowMode) {
+                Text(L("mode.flow")).tag(GlowMode.flow)
+                Text(L("mode.breathe")).tag(GlowMode.breathe)
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    private var advancedSection: some View {
+        Group {
+            sectionHeader(L("settings.advanced"))
+
+            HStack {
+                Text(L("settings.httpPort"))
+                    .font(.subheadline)
+                Spacer()
+                PortField(port: $settings.httpPort)
+            }
+
+            Button(L("settings.configHooks")) {
+                HooksInstaller.showConfigDialog(port: settings.httpPort)
+            }
+
+            Text(String(format: L("settings.hooksHint"), "http://127.0.0.1:\(settings.httpPort)"))
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
     }
 
     // MARK: - Helpers

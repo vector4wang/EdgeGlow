@@ -158,55 +158,45 @@ class GlowWindow {
         ]
 
         if settings.glowMode == .flow {
-            // 跑马灯模式：完整圆环 + conic 渐变遮罩，10% 缺口用渐变过渡
-            for (blurIdx, blurCfg) in blurLevels.enumerated() {
-                let shape = CAShapeLayer()
-                shape.frame = ringLayer.bounds
-                shape.path = path
-                shape.fillColor = nil
-                shape.lineWidth = max(1, baseWidth * blurCfg.lineWidthMul)
-                shape.lineCap = .butt
-                shape.opacity = 0.5
-                shape.strokeStart = 0
-                shape.strokeEnd = 1  // 完整圆环
+            // 跑马灯模式：3 条长灯带首尾相接，沿矩形边缘整体旋转。
+            // 避免 20 段碎片感，也避免 conic mask 造成的“方块旋转”视觉。
+            let perimeter = max(1, 2 * (rect.width + rect.height))
+            let bandCount = 3
+            let bandLength = perimeter / CGFloat(bandCount)
+            let overlap: CGFloat = min(baseWidth * 2, bandLength * 0.02)
+            let dashLength = bandLength + overlap
+            let gapLength = max(1, perimeter - dashLength)
 
-                // conic 渐变遮罩：透明 → 白色 → 白色 → 透明，柔和过渡
-                let gradMask = CAGradientLayer()
-                gradMask.frame = ringLayer.bounds
-                gradMask.type = .conic
-                gradMask.startPoint = CGPoint(x: 0.5, y: 0.5)
-                gradMask.endPoint = CGPoint(x: 1.0, y: 0.5)
-                gradMask.colors = [
-                    NSColor.clear.cgColor,
-                    NSColor.white.cgColor,
-                    NSColor.white.cgColor,
-                    NSColor.clear.cgColor,
-                ]
-                gradMask.locations = [0, 0.05, 0.95, 1.0]
-                shape.mask = gradMask
+            for band in 0..<bandCount {
+                let colorIndex = colors.isEmpty ? 0 : Int((CGFloat(band) / CGFloat(bandCount)) * CGFloat(colors.count)) % colors.count
+                let color = colors.isEmpty ? NSColor.systemPurple.cgColor : colors[colorIndex]
 
-                if blurCfg.blur > 0 {
-                    let bf = CIFilter(name: "CIGaussianBlur")!
-                    bf.setValue(blurCfg.blur, forKey: "inputRadius")
-                    shape.filters = [bf]
+                for blurCfg in blurLevels {
+                    let shape = CAShapeLayer()
+                    shape.frame = ringLayer.bounds
+                    shape.path = path
+                    shape.fillColor = nil
+                    shape.strokeColor = color
+                    shape.lineWidth = max(1, baseWidth * blurCfg.lineWidthMul)
+                    shape.lineCap = .butt
+                    shape.lineJoin = .round
+                    shape.opacity = 0.5
+                    shape.strokeStart = 0
+                    shape.strokeEnd = 1
+                    shape.lineDashPattern = [
+                        NSNumber(value: Double(dashLength)),
+                        NSNumber(value: Double(gapLength))
+                    ]
+                    shape.lineDashPhase = CGFloat(band) * bandLength
+
+                    if blurCfg.blur > 0 {
+                        let bf = CIFilter(name: "CIGaussianBlur")!
+                        bf.setValue(blurCfg.blur, forKey: "inputRadius")
+                        shape.filters = [bf]
+                    }
+
+                    ringLayer.addSublayer(shape)
                 }
-
-                ringLayer.addSublayer(shape)
-
-                guard colors.count > 1 else {
-                    shape.strokeColor = colors.first
-                    continue
-                }
-                let colorAnim = CAKeyframeAnimation(keyPath: "strokeColor")
-                colorAnim.values = colors.map { $0 as Any }
-                colorAnim.keyTimes = (0..<colors.count).map {
-                    NSNumber(value: Double($0) / Double(colors.count - 1))
-                }
-                colorAnim.duration = settings.animationDuration * 2
-                colorAnim.repeatCount = .infinity
-                colorAnim.calculationMode = .linear
-                colorAnim.timeOffset = colorAnim.duration * Double(blurIdx) * 0.05
-                shape.add(colorAnim, forKey: "colorCycle")
             }
         } else {
             // 呼吸灯模式：20 段 × 4 层，虹彩分段着色
@@ -325,11 +315,14 @@ class GlowWindow {
         let speed = perimeter / CGFloat(settings.animationDuration)
         dashPhase += speed * clampedDt * (settings.clockwise ? 1 : -1)
 
-        let angle = (dashPhase / perimeter) * 2 * CGFloat.pi
+        let blurLayerCount = 4
+        let bandCount = max(1, (ringLayer.sublayers?.count ?? 0) / blurLayerCount)
+        let bandLength = perimeter / CGFloat(bandCount)
 
-        ringLayer.sublayers?.forEach { layer in
+        ringLayer.sublayers?.enumerated().forEach { idx, layer in
             guard let shape = layer as? CAShapeLayer else { return }
-            shape.mask?.transform = CATransform3DMakeRotation(angle, 0, 0, 1)
+            let band = idx / blurLayerCount
+            shape.lineDashPhase = dashPhase + CGFloat(band) * bandLength
         }
     }
 
