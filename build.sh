@@ -11,7 +11,7 @@ set -e
 
 APP_NAME="EdgeGlow"
 BUNDLE_ID="com.edgeglow.app"
-VERSION="1.3.2"
+VERSION="1.3.3"
 BUILD_DIR="Build"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 RELEASE_DIR="Release"
