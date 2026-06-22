@@ -44,6 +44,8 @@ class L10n {
         "mode.flow":               ("跑马灯", "Flow"),
         "mode.breathe":            ("呼吸灯", "Breathe"),
 
+        "settings.frameRate":      ("帧率上限", "Frame Rate Cap"),
+
         "settings.advanced":       ("高级", "Advanced"),
         "settings.httpPort":       ("HTTP 端口", "HTTP Port"),
         "settings.configHooks":    ("配置 Agent Hooks", "Configure Agent Hooks"),

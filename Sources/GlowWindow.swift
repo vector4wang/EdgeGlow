@@ -193,6 +193,7 @@ class GlowWindow {
                         let bf = CIFilter(name: "CIGaussianBlur")!
                         bf.setValue(blurCfg.blur, forKey: "inputRadius")
                         shape.filters = [bf]
+                        shape.contentsScale = 0.5  // 降分辨率渲染滤镜，减少 GPU 像素处理量
                     }
 
                     ringLayer.addSublayer(shape)
@@ -220,6 +221,7 @@ class GlowWindow {
                         let bf = CIFilter(name: "CIGaussianBlur")!
                         bf.setValue(blurCfg.blur, forKey: "inputRadius")
                         shape.filters = [bf]
+                        shape.contentsScale = 0.5  // 降分辨率渲染滤镜，减少 GPU 像素处理量
                     }
 
                     ringLayer.addSublayer(shape)
@@ -303,11 +305,14 @@ class GlowWindow {
 
     private func tickFlow() {
         let now = CACurrentMediaTime()
-        let dt = CGFloat(now - lastTickTime)
-        lastTickTime = now
+        let elapsed = now - lastTickTime
 
-        // 防止 dt 过大（如从后台回来），限制最大 0.1s
-        let clampedDt = min(dt, 0.1)
+        // 帧率限制：跳过不必要的 vsync 回调，降低 GPU 负载
+        let targetInterval = settings.targetFrameInterval
+        guard elapsed >= targetInterval else { return }
+
+        let clampedDt = min(CGFloat(elapsed), 0.1)
+        lastTickTime = now
 
         let perimeter = currentPerimeter()
         guard perimeter > 0, settings.animationDuration > 0 else { return }
@@ -319,11 +324,15 @@ class GlowWindow {
         let bandCount = max(1, (ringLayer.sublayers?.count ?? 0) / blurLayerCount)
         let bandLength = perimeter / CGFloat(bandCount)
 
+        // 批量提交：避免每次属性修改都隐式触发 CA::Transaction
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
         ringLayer.sublayers?.enumerated().forEach { idx, layer in
             guard let shape = layer as? CAShapeLayer else { return }
             let band = idx / blurLayerCount
             shape.lineDashPhase = dashPhase + CGFloat(band) * bandLength
         }
+        CATransaction.commit()
     }
 
     // MARK: - 显示/隐藏/脉冲

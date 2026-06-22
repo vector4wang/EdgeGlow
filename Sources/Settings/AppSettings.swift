@@ -31,6 +31,7 @@ class AppSettings: ObservableObject {
         case clockwise      = "glow_clockwise"
         case customColors   = "custom_colors"
         case glowMode       = "glow_mode"
+        case preferredFrameRate = "preferred_frame_rate"
     }
 
     // MARK: - Published Properties
@@ -78,6 +79,9 @@ class AppSettings: ObservableObject {
     @Published var glowMode: GlowMode {
         didSet { defaults.set(glowMode.rawValue, forKey: Key.glowMode.rawValue) }
     }
+    @Published var preferredFrameRate: Int {
+        didSet { defaults.set(preferredFrameRate, forKey: Key.preferredFrameRate.rawValue) }
+    }
 
     // MARK: - Computed
     var currentTheme: ColorTheme {
@@ -97,6 +101,11 @@ class AppSettings: ObservableObject {
         return 2 + CGFloat(width - 1) * (18.0 / 9.0)
     }
 
+    /// 目标帧间隔（秒）
+    var targetFrameInterval: CFTimeInterval {
+        return 1.0 / CFTimeInterval(preferredFrameRate)
+    }
+
     // MARK: - Init
     private init() {
         self.enabled = UserDefaults.standard.object(forKey: Key.enabled.rawValue) as? Bool ?? true
@@ -114,6 +123,7 @@ class AppSettings: ObservableObject {
         self.customColors = UserDefaults.standard.stringArray(forKey: Key.customColors.rawValue) ?? []
         let savedMode = UserDefaults.standard.string(forKey: Key.glowMode.rawValue) ?? GlowMode.breathe.rawValue
         self.glowMode = GlowMode(rawValue: savedMode) ?? .breathe
+        self.preferredFrameRate = UserDefaults.standard.object(forKey: Key.preferredFrameRate.rawValue) as? Int ?? 60
     }
 
     // MARK: - Auto Start

@@ -29,7 +29,7 @@ struct SettingsView: View {
                 .padding(20)
             }
         }
-        .frame(width: 380, height: 560)
+        .frame(width: 380, height: 600)
     }
 
     // MARK: - Sections
@@ -61,11 +61,7 @@ struct SettingsView: View {
         Group {
             sectionHeader(L("settings.appearance"))
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text(L("settings.theme"))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                Picker(L("settings.theme"), selection: $settings.themeName) {
+            Picker(L("settings.theme"), selection: $settings.themeName) {
                     Text(L("theme.rainbow")).tag(ThemeName.rainbow)
                     Text(L("theme.pastel")).tag(ThemeName.pastel)
                     Text(L("theme.fire")).tag(ThemeName.fire)
@@ -73,7 +69,6 @@ struct SettingsView: View {
                     Text(L("theme.iridescent")).tag(ThemeName.iridescent)
                 }
                 .pickerStyle(.segmented)
-            }
 
             sliderRow(L("settings.speed"), value: $settings.speed, range: 1...10, format: "%.0f")
             sliderRow(L("settings.width"), value: $settings.width, range: 1...20, format: "%.0f")
@@ -88,6 +83,13 @@ struct SettingsView: View {
             Picker(L("settings.mode"), selection: $settings.glowMode) {
                 Text(L("mode.flow")).tag(GlowMode.flow)
                 Text(L("mode.breathe")).tag(GlowMode.breathe)
+            }
+            .pickerStyle(.segmented)
+
+            Picker(L("settings.frameRate"), selection: $settings.preferredFrameRate) {
+                Text("30 fps").tag(30)
+                Text("60 fps").tag(60)
+                Text("120 fps").tag(120)
             }
             .pickerStyle(.segmented)
         }
