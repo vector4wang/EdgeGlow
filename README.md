@@ -11,6 +11,7 @@
 [中文](#中文) | [English](#english)
 
 [![macOS](https://img.shields.io/badge/macOS-13.0+-blue.svg)](https://www.apple.com/macos)
+[![Windows](https://img.shields.io/badge/Windows-Port_Available-0078D6.svg?logo=windows&logoColor=white)](https://github.com/vector4wang/EdgeGlow-Windows)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Universal Binary](https://img.shields.io/badge/arch-Universal%20Binary-lightgrey.svg)]()
 [![Swift](https://img.shields.io/badge/Swift-5.9+-orange.svg)]()
@@ -18,6 +19,11 @@
 [![Memory](https://img.shields.io/badge/Memory-~50MB-brightgreen.svg)]()
 
 </div>
+
+> [!TIP]
+> 🪟 **Windows 版现已发布！** EdgeGlow 已完整移植到 Windows 10 / 11（C# / .NET 8 / WPF + SkiaSharp），同一套设计、同一套 Hook，同样支持 Claude Code / Hermes 联动、多终端 PID 追踪与 5 套主题。👉 前往 [**EdgeGlow-Windows**](https://github.com/vector4wang/EdgeGlow-Windows)
+>
+> 🪟 **Windows port now available!** EdgeGlow has been fully ported to Windows 10 / 11 (C# / .NET 8 / WPF + SkiaSharp) — same design, same hooks, same Claude Code / Hermes integration. 👉 Visit [**EdgeGlow-Windows**](https://github.com/vector4wang/EdgeGlow-Windows)
 
 ---
 
@@ -274,7 +280,7 @@ chmod +x ~/.hermes/agent-hooks/*.sh
 ### 📊 性能指标
 
 | 指标 | 数值 | 说明 |
-|:----:|:----:|:----:|
+|:----:|:----:|:----|
 | CPU 占用 | **~0%** | Timer 60fps 仅更新一个 CGFloat 属性 |
 | 内存占用 | **~50MB** | 4 层 CAShapeLayer + CIFilter |
 | 启动时间 | **< 0.5s** | 无网络请求，纯本地运行 |
