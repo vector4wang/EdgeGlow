@@ -155,7 +155,7 @@ struct PortField: View {
             .focused($isFocused)
             .onAppear { text = String(port) }
             .onSubmit { commit() }
-            .onChange(of: isFocused) { _, focused in
+            .onChange(of: isFocused) { focused in
                 if !focused { commit() }
             }
     }
