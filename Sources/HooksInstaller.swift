@@ -13,12 +13,16 @@ class HooksInstaller {
         alert.alertStyle = .informational
         alert.addButton(withTitle: "Claude Code " + L("hooks.viewConfig"))
         alert.addButton(withTitle: "Hermes Agent " + L("hooks.viewConfig"))
+        alert.addButton(withTitle: "CodeBuddy " + L("hooks.viewConfig"))
+        alert.addButton(withTitle: "WorkBuddy " + L("hooks.viewConfig"))
         alert.addButton(withTitle: L("hooks.cancel"))
 
         let response = alert.runModal()
-        switch response {
-        case .alertFirstButtonReturn: showClaudeCodePrompt(port: port)
-        case .alertSecondButtonReturn: showHermesPrompt(port: port)
+        switch response.rawValue {
+        case 1000: showClaudeCodePrompt(port: port)
+        case 1001: showHermesPrompt(port: port)
+        case 1002: showSettingsPrompt(agent: "CodeBuddy", configPath: "~/.codebuddy/settings.json", port: port)
+        case 1003: showSettingsPrompt(agent: "WorkBuddy", configPath: "~/.workbuddy/settings.json", port: port)
         default: break
         }
     }
@@ -104,6 +108,50 @@ class HooksInstaller {
 
         说明：$PPID 用于多终端追踪，防止一个终端结束时误关其他终端的流光。
         创建完成后确认。
+        """
+    }
+
+    // ================================================================
+    // MARK: - CodeBuddy / WorkBuddy 引导词（settings.json hooks，结构同 Claude Code）
+    // ================================================================
+
+    private static func showSettingsPrompt(agent: String, configPath: String, port: Int) {
+        let prompt = settingsPrompt(configPath: configPath, port: port)
+        let alert = NSAlert()
+        alert.messageText = String(format: L("hooks.settings.title"), agent)
+        alert.informativeText = String(format: L("hooks.settings.msg"), agent, prompt)
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: L("hooks.settings.copy"))
+        alert.addButton(withTitle: L("hooks.settings.close"))
+
+        if alert.runModal() == .alertFirstButtonReturn {
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(prompt, forType: .string)
+        }
+    }
+
+    /// 生成发给 CodeBuddy / WorkBuddy 的提示词（写在 ~/.<agent>/settings.json）
+    private static func settingsPrompt(configPath: String, port: Int) -> String {
+        let base = "http://127.0.0.1:\(port)"
+        let startCmd = #"curl -s "\#(base)/start""#
+        let pulseCmd = #"curl -s "\#(base)/pulse""#
+        return """
+        请帮我配置 EdgeGlow 的 hooks。读取 \(configPath)，在 "hooks" 字段中添加（保留已有内容）：
+
+        {
+          "hooks": {
+            "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "\(startCmd)"}]}],
+            "PreToolUse":       [{"hooks": [{"type": "command", "command": "\(startCmd)"}]}],
+            "PostToolUse":      [{"hooks": [{"type": "command", "command": "\(pulseCmd)"}]}],
+            "Stop":             [{"hooks": [{"type": "command", "command": "\(pulseCmd)"}]}]
+          }
+        }
+
+        说明：
+        - hooks 结构与 Claude Code 完全一致，事件名相同
+        - UserPromptSubmit/PreToolUse → /start 开启流光
+        - PostToolUse/Stop → /pulse 闪亮后自动关闭
+        修改完成后保存文件。
         """
     }
 }

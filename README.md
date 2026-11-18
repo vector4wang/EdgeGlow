@@ -240,6 +240,33 @@ chmod +x ~/.hermes/agent-hooks/*.sh
 
 </details>
 
+#### CodeBuddy / WorkBuddy
+
+配置方式与 Claude Code 完全一致（同为 `settings.json` 的 `hooks` 字段，事件名相同）。打开设置 → 点击「配置 Agent Hooks」→ 选择对应 Agent 的「查看配置」→ 复制引导词，粘贴到对话框中发送即可自动完成配置。
+
+<details>
+<summary>📋 手动配置参考</summary>
+
+- CodeBuddy：编辑 `~/.codebuddy/settings.json`
+- WorkBuddy：编辑 `~/.workbuddy/settings.json`
+
+在 `"hooks"` 字段中添加（保留已有内容）：
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/start\""}]}],
+    "PreToolUse":       [{"hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/start\""}]}],
+    "PostToolUse":      [{"hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/pulse\""}]}],
+    "Stop":             [{"hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/pulse\""}]}]
+  }
+}
+```
+
+> 注：这里不使用 `?pid=$PPID`——hook 命令经 shell 执行时 `$PPID` 在不同 Agent 下不稳定，会导致 PID 追踪失效、流光无法自动关闭。不带 pid 时服务使用引用计数，单次触发即可正常控制。
+
+</details>
+
 ---
 
 ### ⚙️ 设置
@@ -292,7 +319,7 @@ chmod +x ~/.hermes/agent-hooks/*.sh
 
 1. **屏幕录制权限**：EdgeGlow 使用全屏透明覆盖窗口（`NSWindow.Level.overlayWindow`），部分 macOS 版本可能需要在「系统设置 → 隐私与安全 → 屏幕录制」中授权。
 
-2. **多显示器**：自动适配所有屏幕的联合包围区域。插拔显示器时自动响应（500ms 延迟防抖）。
+2. **多显示器**：为每个屏幕独立绘制边缘流光（含凹位/中间屏幕）。插拔显示器时自动响应（500ms 延迟防抖）。
 
 3. **端口冲突**：默认端口 `9876`，如被占用请在设置中更改。仅接受本地连接（`acceptLocalOnly`），不暴露到网络。
 
@@ -313,9 +340,11 @@ chmod +x ~/.hermes/agent-hooks/*.sh
 ```
 Sources/
 ├── main.swift              # 入口 · AppDelegate · 菜单栏
-├── GlowWindow.swift        # 流光窗口 · 四层光效 · Timer 动画
+├── MetalGlowView.swift     # Metal 片元着色器渲染（单次 draw call）
+├── MetalGlowWindow.swift   # 单屏流光窗口封装
+├── GlowWindowManager.swift # 多屏管理 · 热插拔响应
 ├── ControlServer.swift     # HTTP 控制服务 · NWListener
-├── HooksInstaller.swift    # Agent 配置引导（复制提示词模式）
+├── HooksInstaller.swift    # Agent 配置引导（Claude/Hermes/CodeBuddy/WorkBuddy）
 ├── L10n.swift              # 中英双语国际化
 ├── Settings/
 │   ├── AppSettings.swift   # UserDefaults 持久化 · Combine 响应式
@@ -394,7 +423,32 @@ git clone https://github.com/vector4wang/EdgeGlow.git && cd EdgeGlow
 
 ### 🔌 Setup
 
-Go to Settings → Configure Agent Hooks → copy the prompt → paste it into your AI agent's chat. The agent will configure the hooks automatically.
+Go to Settings → Configure Agent Hooks → copy the prompt → paste it into your AI agent's chat. The agent will configure the hooks automatically. Supported agents:
+
+- **Claude Code** — `~/.claude/settings.json`
+- **Hermes Agent** — `~/.hermes/agent-hooks/`
+- **CodeBuddy** — `~/.codebuddy/settings.json`
+- **WorkBuddy** — `~/.workbuddy/settings.json`
+
+<details>
+<summary>📋 Manual setup for CodeBuddy / WorkBuddy</summary>
+
+CodeBuddy and WorkBuddy use the same `settings.json` hooks schema as Claude Code. Add to the `"hooks"` field (keep existing content):
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [{"hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/start\""}]}],
+    "PreToolUse":       [{"hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/start\""}]}],
+    "PostToolUse":      [{"hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/pulse\""}]}],
+    "Stop":             [{"hooks": [{"type": "command", "command": "curl -s \"http://127.0.0.1:9876/pulse\""}]}]
+  }
+}
+```
+
+> Note: `?pid=$PPID` is intentionally omitted — `$PPID` is unreliable inside hook shell commands across agents and can break PID tracking (glow won't auto-close). Without pid, the server uses a simple reference count that works per trigger.
+
+</details>
 
 ### ⚙️ Settings
 

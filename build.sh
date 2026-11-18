@@ -11,7 +11,7 @@ set -e
 
 APP_NAME="EdgeGlow"
 BUNDLE_ID="com.edgeglow.app"
-VERSION="1.3.3"
+VERSION="1.4.1"
 BUILD_DIR="Build"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}.app"
 RELEASE_DIR="Release"
@@ -61,6 +61,15 @@ mkdir -p "${BUILD_DIR}"
 SOURCE_FILES=$(find Sources -name "*.swift" -type f)
 CURRENT_ARCH=$(uname -m)
 
+# 把二进制的 build SDK 标记改回 13.1：
+# macOS 27 SDK 编译的程序其 NSMenu 菜单项图标不渲染，AppKit 依据该标记走兼容路径。
+patch_sdk_marker() {
+    local bin="$1" tmp="${BUILD_DIR}/.sdkpatched"
+    vtool -arch arm64 -set-build-version macos 12.0 13.1 -replace -output "${tmp}" "${bin}"
+    vtool -arch x86_64 -set-build-version macos 12.0 13.1 -replace -output "${bin}" "${tmp}"
+    rm -f "${tmp}"
+}
+
 # 根据当前架构，只编译另一架构
 if [ "$CURRENT_ARCH" = "arm64" ]; then
     swiftc -o "${BUILD_DIR}/${APP_NAME}" \
@@ -88,6 +97,7 @@ if [ "$CURRENT_ARCH" = "arm64" ]; then
         "${BUILD_DIR}/${APP_NAME}_x86_64"
     mv "${BUILD_DIR}/${APP_NAME}_universal" "${BUILD_DIR}/${APP_NAME}"
     rm -f "${BUILD_DIR}/${APP_NAME}_x86_64"
+    patch_sdk_marker "${BUILD_DIR}/${APP_NAME}"
 else
     swiftc -o "${BUILD_DIR}/${APP_NAME}" \
         ${SOURCE_FILES} \
@@ -114,6 +124,7 @@ else
         "${BUILD_DIR}/${APP_NAME}_arm64"
     mv "${BUILD_DIR}/${APP_NAME}_universal" "${BUILD_DIR}/${APP_NAME}"
     rm -f "${BUILD_DIR}/${APP_NAME}_arm64"
+    patch_sdk_marker "${BUILD_DIR}/${APP_NAME}"
 fi
 
 info "编译完成"
@@ -130,9 +141,19 @@ mkdir -p "${APP_BUNDLE}/Contents/Resources"
 cp "${BUILD_DIR}/${APP_NAME}" "${APP_BUNDLE}/Contents/MacOS/"
 cp Resources/Info.plist "${APP_BUNDLE}/Contents/"
 
-# 如果有图标
+# 应用图标
 if [ -f "Resources/EdgeGlow.icns" ]; then
     cp Resources/EdgeGlow.icns "${APP_BUNDLE}/Contents/Resources/"
+fi
+
+# 菜单栏图标（statusItem 通过 Bundle.main.path(forResource:"menu_icon") 加载）
+if [ -f "Resources/menu_icon.png" ]; then
+    cp Resources/menu_icon.png "${APP_BUNDLE}/Contents/Resources/"
+fi
+
+# 下拉菜单项图标（dark/light 两套，按系统外观选用）
+if [ -d "Resources/menu_icons" ]; then
+    cp -R Resources/menu_icons "${APP_BUNDLE}/Contents/Resources/"
 fi
 
 chmod +x "${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"

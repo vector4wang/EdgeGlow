@@ -4,8 +4,8 @@ import UserNotifications
 // ============================================================
 // MARK: - App Delegate
 // ============================================================
-class AppDelegate: NSObject, NSApplicationDelegate {
-    var glow: GlowWindow!
+class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+    var glow: GlowWindowManager { GlowWindowManager.shared }
     var server: ControlServer!
     var statusItem: NSStatusItem!
     var settingsWindow = SettingsWindowManager()
@@ -21,8 +21,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
 
-        // 初始化流光窗口
-        glow = GlowWindow(settings: settings)
+        // 流光窗口由 GlowWindowManager 按屏幕列表自动创建
 
         // 启动时不自动显示流光，等待 Agent 触发或用户手动开启
         // 显示启动通知提示用户
@@ -64,6 +63,35 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// 按系统外观加载菜单图标（深色菜单用白色，浅色菜单用黑色）
+    private func menuIcon(_ name: String) -> NSImage? {
+        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+        let prefix = isDark ? "dark" : "light"
+        guard let path = Bundle.main.path(forResource: "\(prefix)_\(name)",
+                                          ofType: "png", inDirectory: "menu_icons"),
+              let image = NSImage(contentsOfFile: path) else { return nil }
+        image.size = NSSize(width: 16, height: 16)
+        return image
+    }
+
+    // MARK: - NSMenuDelegate：外观切换后刷新图标
+    func menuWillOpen(_ menu: NSMenu) {
+        for item in menu.items {
+            let tag = item.tag
+            let name: String?
+            switch tag {
+            case 1:  name = settings.enabled ? "check" : "xmark"
+            case 2:  name = "power_on"
+            case 3:  name = "power_off"
+            case 4:  name = "settings"
+            case 5:  name = "feedback"
+            case 6:  name = "quit"
+            default: name = nil
+            }
+            if let name = name { item.image = menuIcon(name) }
+        }
+    }
+
     private func startServer(port: Int) {
         guard port >= 1024, port <= 65535 else {
             FileHandle.standardError.write(Data("[edge-glow] ❌ 端口 \(port) 无效，需在 1024-65535 之间\n".utf8))
@@ -95,13 +123,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         let menu = NSMenu()
+        menu.delegate = self
 
         // 启用/禁用
         let enableItem = NSMenuItem(title: settings.enabled ? L("menu.enabled") : L("menu.disabled"),
                                      action: #selector(toggleEnable), keyEquivalent: "")
         enableItem.target = self
-        enableItem.image = NSImage(systemSymbolName: settings.enabled ? "checkmark.circle" : "xmark.circle",
-                                   accessibilityDescription: nil)
+        enableItem.tag = 1
+        enableItem.image = menuIcon(settings.enabled ? "check" : "xmark")
         menu.addItem(enableItem)
 
         menu.addItem(.separator())
@@ -109,12 +138,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 手动控制
         let onItem = NSMenuItem(title: L("menu.turnOn"), action: #selector(turnOn), keyEquivalent: "")
         onItem.target = self
-        onItem.image = NSImage(systemSymbolName: "power.circle.fill", accessibilityDescription: nil)
+        onItem.tag = 2
+        onItem.image = menuIcon("power_on")
         menu.addItem(onItem)
 
         let offItem = NSMenuItem(title: L("menu.turnOff"), action: #selector(turnOff), keyEquivalent: "")
         offItem.target = self
-        offItem.image = NSImage(systemSymbolName: "power.circle", accessibilityDescription: nil)
+        offItem.tag = 3
+        offItem.image = menuIcon("power_off")
         menu.addItem(offItem)
 
         menu.addItem(.separator())
@@ -122,13 +153,15 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 设置
         let settingsItem = NSMenuItem(title: L("menu.settings"), action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
-        settingsItem.image = NSImage(systemSymbolName: "gearshape", accessibilityDescription: nil)
+        settingsItem.tag = 4
+        settingsItem.image = menuIcon("settings")
         menu.addItem(settingsItem)
 
         // 反馈
         let feedbackItem = NSMenuItem(title: L("menu.feedback"), action: #selector(openFeedback), keyEquivalent: "")
         feedbackItem.target = self
-        feedbackItem.image = NSImage(systemSymbolName: "exclamationmark.bubble", accessibilityDescription: nil)
+        feedbackItem.tag = 5
+        feedbackItem.image = menuIcon("feedback")
         menu.addItem(feedbackItem)
 
         menu.addItem(.separator())
@@ -136,7 +169,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 退出
         let quitItem = NSMenuItem(title: L("menu.quit"), action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
-        quitItem.image = NSImage(systemSymbolName: "arrow.right.square", accessibilityDescription: nil)
+        quitItem.tag = 6
+        quitItem.image = menuIcon("quit")
         menu.addItem(quitItem)
 
         statusItem.menu = menu
@@ -146,8 +180,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         settings.enabled.toggle()
         if let item = statusItem.menu?.items.first {
             item.title = settings.enabled ? L("menu.enabled") : L("menu.disabled")
-            item.image = NSImage(systemSymbolName: settings.enabled ? "checkmark.circle" : "xmark.circle",
-                                 accessibilityDescription: nil)
+            item.image = menuIcon(settings.enabled ? "check" : "xmark")
         }
         if settings.enabled {
             glow.show()

@@ -85,6 +85,13 @@ class L10n {
         "hooks.hermes.copy":       ("复制提示词", "Copy Prompt"),
         "hooks.hermes.close":      ("关闭", "Close"),
 
+        // CodeBuddy / WorkBuddy 共用一套文案（%@ 为 Agent 名）
+        "hooks.settings.title":    ("%@ 配置引导", "%@ Setup Guide"),
+        "hooks.settings.msg":      ("复制下方提示词，粘贴到 %@ 对话框中发送，Agent 会自动帮你完成配置：\n\n%@",
+                                    "Copy the prompt below and paste it into %@. The agent will configure hooks for you:\n\n%@"),
+        "hooks.settings.copy":     ("复制提示词", "Copy Prompt"),
+        "hooks.settings.close":    ("关闭", "Close"),
+
         // MARK: - 启动提示
         "launch.notification.title": ("✦ EdgeGlow 已就绪", "✦ EdgeGlow Ready"),
         "launch.notification.body":  ("点击菜单栏图标查看使用说明\n当 Agent 工作时，流光会自动亮起",

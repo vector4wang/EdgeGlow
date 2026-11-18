@@ -29,7 +29,7 @@ struct SettingsView: View {
                 .padding(20)
             }
         }
-        .frame(width: 380, height: 600)
+        .frame(width: 480, height: 600)
     }
 
     // MARK: - Sections
