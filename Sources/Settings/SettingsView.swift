@@ -29,7 +29,7 @@ struct SettingsView: View {
                 .padding(20)
             }
         }
-        .frame(width: 380, height: 600)
+        .frame(width: 480, height: 600)
     }
 
     // MARK: - Sections
@@ -155,7 +155,7 @@ struct PortField: View {
             .focused($isFocused)
             .onAppear { text = String(port) }
             .onSubmit { commit() }
-            .onChange(of: isFocused) { focused in
+            .onChange(of: isFocused) { _, focused in
                 if !focused { commit() }
             }
     }

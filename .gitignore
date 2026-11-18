@@ -14,8 +14,12 @@ DerivedData/
 *.swp
 *~
 
-# IDE
+# IDE / Agent 本地数据
 .idea/
 .vscode/
 .claudeagent
 .claude
+.workbuddy/
+
+# 临时目录
+tmp/
